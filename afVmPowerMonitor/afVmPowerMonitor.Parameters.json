@@ -5,9 +5,6 @@
     "functionName": {
       "value": "vmPowerMonitor"
     },
-    "location": {
-      "value": "East US"
-    },
     "storageAccountNamePrefix": {
       "value": "gpv2afweb"
     },

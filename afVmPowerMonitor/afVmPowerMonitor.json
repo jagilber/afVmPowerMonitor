@@ -11,10 +11,6 @@
         "description": "storage account name must be unique."
       }
     },
-    "location": {
-      "type": "string",
-      "defaultValue": "eastus"
-    },
     "storageAccountType": {
       "type": "string",
       "defaultValue": "Standard_LRS"
@@ -41,7 +37,6 @@
   "variables": {
     "storageAccountName": "[take( toLower( concat( parameters('storageAccountNamePrefix'), uniqueString(resourceGroup().id) ) ),24)]",
     "webSiteName": "[take( toLower( concat( parameters('functionName'), uniqueString(resourceGroup().id) ) ),24)]"
-    //"webSiteName": "[parameters('functionName')]"
   },
   "resources": [
     {
@@ -89,14 +84,14 @@
         "reserved": false
       },
       "apiVersion": "2018-02-01",
-      "location": "[parameters('location')]",
+      "location": "[resourcegroup().location]",
       "kind": "functionapp"
     },
     {
       "name": "[variables('storageAccountName')]",
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2018-07-01",
-      "location": "[parameters('location')]",
+      "location": "[resourcegroup().location]",
       "properties": {
         "supportsHttpsTrafficOnly": "[parameters('supportsHttpsTrafficOnly')]"
       },
@@ -110,7 +105,7 @@
       "apiVersion": "2018-05-01",
       "name": "[parameters('functionName')]",
       "type": "microsoft.insights/components",
-      "location": "[parameters('location')]",
+      "location": "[resourcegroup().location]",
       "tags": {
         "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', parameters('functionName'))]": "Resource"
       },
