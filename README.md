@@ -7,7 +7,14 @@ azure function to monitor virtual machine power states and deallocate after spec
 - storage account v2
 
 #### Required
-- azure client id and secret for function authentication
+- azure client id and secret for function authentication  
+```ps
+pwsh
+(new-object net.webclient).downloadfile("https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-rm-create-aad-application-spn.ps1","$(get-location)/azure-rm-create-aad-application-spn.ps1");
+azure-rm-create-aad-application-spn.ps1 -logontype certthumb
+
+```
+    [azure cloud shell](https://shell.azure.com/)
 
 
 #### Optional
