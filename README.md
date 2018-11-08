@@ -9,7 +9,7 @@ azure function to monitor virtual machine power states and deallocate after spec
 #### Required
 - an existing or new azure client id and secret for function authentication  
   * client id and secret are an azure service principal name which is required for any application authenticating to azure in a non-interactive environment. there are multiple ways to create azure id and secret. one way is to copy the command below into admin powershell prompt and execute to create client id and secret. this will generate a self signed certificate on the local machine from where it is run. the certificate thumbprint will be used when creating the azure spn.
-  * use the client id and secret output values from command below when deploying template.
+  * if needed, use the following command to generate a new client id and secret, save and use values when deploying template.
 ```powershell
 iwr "https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-rm-create-aad-application-spn.ps1"| iex
 ```  
