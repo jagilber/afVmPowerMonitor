@@ -32,11 +32,70 @@
       "metadata": {
         "description": "create free account on sendgrid and paste in generated api key or leave blank if no email notification is needed."
       }
+    },
+    "AzureWebJobsDisableHomePage": {
+      "type": "string",
+      "defaultValue": "False",
+      "metadata": {
+        "description": "enables or disables the azure function home page showing function status."
+      }
+    },
+    "AzureClientId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "azure client id needed for function to authenticate / impersonate"
+      }
+    },
+    "AzureSecret": {
+      "type": "securestring",
+      "defaultValue": "",
+      "metadata": {
+        "description": "secret for azure client id"
+      }
+    },
+    "FunctionJsonStorageContainer": {
+      "type": "string",
+      "defaultValue": "$web",
+      "metadata": {
+        "description": "$web is the blob name for storage v2 accounts using static web site"
+      }
+    },
+    "ConsecutivePoweredOnEmailCount": {
+      "type": "string",
+      "defaultValue": "3",
+      "metadata": {
+        "description": "number of discoveries of vm before sending email. function runs every 4 hours."
+      }
+    },
+    "ConsecutivePoweredOnActionCount": {
+      "type": "string",
+      "defaultValue": "4",
+      "metadata": {
+        "description": "number of discoveries of vm before sending deallocate action. function runs every 4 hours."
+      }
+    },
+    "fromEmail": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "from email address used for sending emails"
+      }
+    },
+    "toEmail": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "to email address used for sending emails"
+      }
     }
   },
   "variables": {
     "storageAccountName": "[take( toLower( concat( parameters('storageAccountNamePrefix'), uniqueString(resourceGroup().id) ) ),24)]",
-    "webSiteName": "[take( toLower( concat( parameters('functionName'), uniqueString(resourceGroup().id) ) ),24)]"
+    "webSiteName": "[take( toLower( concat( parameters('functionName'), uniqueString(resourceGroup().id) ) ),24)]",
+    "kustoApiVersion": "2018-09-07-preview",
+    "apiVersion": "2016-09-01",
+    "virtualMachineApiVersion": "2017-12-01"
   },
   "resources": [
     {
@@ -49,6 +108,62 @@
       "properties": {
         "siteConfig": {
           "appSettings": [
+            {
+              "name": "AzureWebJobsDisableHomePage",
+              "value": "False"
+            },
+            {
+              "name": "AzureTenantId",
+              "value": "[subscription().tenantId]"
+            },
+            {
+              "name": "AzureClientId",
+              "value": "[parameters('AzureClientId')]"
+            },
+            {
+              "name": "AzureSecret",
+              "value": "[parameters('AzureSecret')]"
+            },
+            {
+              "name": "AzureSubscriptionId",
+              "value": "[subscription().subscriptionId]"
+            },
+            {
+              "name": "FunctionJsonStorageContainer",
+              "value": "[parameters('FunctionJsonStorageContainer')]"
+            },
+            {
+              "name": "KustoApiVersion",
+              "value": "[variables('kustoApiVersion')]"
+            },
+            {
+              "name": "VirtualMachineApiVersion",
+              "value": "[variables('virtualMachineApiVersion')]"
+            },
+            {
+              "name": "ApiVersion",
+              "value": "[variables('apiVersion')]"
+            },
+            {
+              "name": "ConsecutivePoweredOnEmailCount",
+              "value": "[parameters('ConsecutivePoweredOnEmailCount')]"
+            },
+            {
+              "name": "ConsecutivePoweredOnActionCount",
+              "value": "[parameters('ConsecutivePoweredOnActionCount')]"
+            },
+            {
+              "name": "SendGridApiKey",
+              "value": "[parameters('sendgridapikey')]"
+            },
+            {
+              "name": "fromEmail",
+              "value": "[parameters('fromEmail')]"
+            },
+            {
+              "name": "toEmail",
+              "value": "[parameters('toEmail')]"
+            },
             {
               "name": "FUNCTIONS_WORKER_RUNTIME",
               "value": "dotnet"
@@ -116,8 +231,14 @@
     }
   ],
   "outputs": {
-    "webSiteName": "[variables('webSiteName')]",
-    "storageAccountName": "[variables('storageAccountName')]"
+    "webSiteName": {
+      "type": "string",
+      "value": "[variables('webSiteName')]"
+    },
+    "storageAccountName": {
+      "type": "string",
+      "value": "[variables('storageAccountName')]"
+    }
   },
   "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0"
