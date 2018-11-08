@@ -217,7 +217,7 @@
       "kind": "[parameters('storageAccountKind')]"
     },
     {
-      "apiVersion": "2018-05-01",
+      "apiVersion": "2015-05-01",
       "name": "[parameters('functionName')]",
       "type": "microsoft.insights/components",
       "location": "[resourcegroup().location]",
