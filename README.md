@@ -13,7 +13,7 @@ azure function to monitor virtual machine power states and deallocate after spec
 #### Optional
 - sendgrid api key for email notifications  
   NOTE: sendgrid account is free for 100 emails / day  
-  (send grid signup)[https://signup.sendgrid.com/]
+  [sendgrid signup](https://signup.sendgrid.com/)
 
 
 #### Click the button below to deploy
