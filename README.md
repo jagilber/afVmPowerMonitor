@@ -7,20 +7,22 @@ azure function to monitor virtual machine power states and deallocate after spec
 - storage account v2
 
 #### Required
-- azure client id and secret for function authentication  
-
+- and existing or new azure client id and secret for function authentication  
+  * client id and secret are an azure service principal name
+  * this is required for any application authenticating to azure in a non-interactive environment
+  * there are multiple ways to create azure id and secret  
+  * one way is to copy the command below into admin powershell prompt and execute to create client id and secret. 
+  * this will generate a self signed certificate on the local machine from where it is run
+  * the certificate thumbprint will be used when creating the azure spn  
+  * use the client id and secret output values from script when deploying template.
 ```powershell
-pwsh
-(new-object net.webclient).downloadfile("https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-rm-create-aad-application-spn.ps1","$(get-location)/azure-rm-create-aad-application-spn.ps1");
-./azure-rm-create-aad-application-spn.ps1 -logontype certthumb  
+iwr "https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-rm-create-aad-application-spn.ps1" | iex
 ```  
-[azure cloud shell](https://shell.azure.com/)
-
-
 #### Optional
 - sendgrid api key for email notifications  
   NOTE: sendgrid account is free for 100 emails / day  
   [sendgrid signup](https://signup.sendgrid.com/)
+
 
 
 #### Click the button below to deploy
