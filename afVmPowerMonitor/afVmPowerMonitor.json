@@ -1,0 +1,129 @@
+{
+  "parameters": {
+    "functionName": {
+      "type": "string",
+      "defaultValue": "vmPowerMonitor"
+    },
+    "storageAccountNamePrefix": {
+      "type": "string",
+      "defaultValue": "gpv2afweb",
+      "metadata": {
+        "description": "storage account name must be unique."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "eastus"
+    },
+    "storageAccountType": {
+      "type": "string",
+      "defaultValue": "Standard_LRS"
+    },
+    "storageAccountKind": {
+      "type": "string",
+      "defaultValue": "StorageV2",
+      "metadata": {
+        "description": "storage account kind must be v2 for static web site."
+      }
+    },
+    "supportsHttpsTrafficOnly": {
+      "type": "bool",
+      "defaultValue": true
+    },
+    "sendgridapikey": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "create free account on sendgrid and paste in generated api key or leave blank if no email notification is needed."
+      }
+    }
+  },
+  "variables": {
+    "storageAccountName": "[take( toLower( concat( parameters('storageAccountNamePrefix'), uniqueString(resourceGroup().id) ) ),24)]",
+    "webSiteName": "[take( toLower( concat( parameters('functionName'), uniqueString(resourceGroup().id) ) ),24)]"
+    //"webSiteName": "[parameters('functionName')]"
+  },
+  "resources": [
+    {
+      "name": "[variables('webSiteName')]",
+      "type": "Microsoft.Web/sites",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
+        "[resourceId('microsoft.insights/components/', parameters('functionName'))]"
+      ],
+      "properties": {
+        "siteConfig": {
+          "appSettings": [
+            {
+              "name": "FUNCTIONS_WORKER_RUNTIME",
+              "value": "dotnet"
+            },
+            {
+              "name": "AzureWebJobsStorage",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1)]"
+            },
+            {
+              "name": "FUNCTIONS_EXTENSION_VERSION",
+              "value": "~2"
+            },
+            {
+              "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
+              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1)]"
+            },
+            {
+              "name": "WEBSITE_CONTENTSHARE",
+              "value": "[concat(toLower(variables('webSiteName')), 'share')]"
+            },
+            {
+              "name": "WEBSITE_NODE_DEFAULT_VERSION",
+              "value": "8.11.1"
+            },
+            {
+              "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
+              "value": "[reference(resourceId('microsoft.insights/components/', parameters('functionName')), '2015-05-01').InstrumentationKey]"
+            }
+          ]
+        },
+        "name": "[variables('webSiteName')]",
+        "clientAffinityEnabled": false,
+        "reserved": false
+      },
+      "apiVersion": "2018-02-01",
+      "location": "[parameters('location')]",
+      "kind": "functionapp"
+    },
+    {
+      "name": "[variables('storageAccountName')]",
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2018-07-01",
+      "location": "[parameters('location')]",
+      "properties": {
+        "supportsHttpsTrafficOnly": "[parameters('supportsHttpsTrafficOnly')]"
+      },
+      "dependsOn": [],
+      "sku": {
+        "name": "[parameters('storageAccountType')]"
+      },
+      "kind": "[parameters('storageAccountKind')]"
+    },
+    {
+      "apiVersion": "2018-05-01",
+      "name": "[parameters('functionName')]",
+      "type": "microsoft.insights/components",
+      "location": "[parameters('location')]",
+      "tags": {
+        "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', parameters('functionName'))]": "Resource"
+      },
+      "properties": {
+        "ApplicationId": "[parameters('functionName')]",
+        "Request_Source": "IbizaWebAppExtensionCreate"
+      }
+    }
+  ],
+  "outputs": {
+    "webSiteName": "[variables('webSiteName')]",
+    "storageAccountName": "[variables('storageAccountName')]"
+  },
+  "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0"
+}

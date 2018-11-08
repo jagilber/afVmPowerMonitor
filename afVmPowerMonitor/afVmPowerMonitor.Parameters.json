@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "functionName": {
+      "value": "vmPowerMonitor"
+    },
+    "location": {
+      "value": "East US"
+    },
+    "storageAccountNamePrefix": {
+      "value": "gpv2afweb"
+    },
+    "storageAccountType": {
+      "value": "Standard_LRS"
+    },
+    "storageAccountKind": {
+      "value": "StorageV2"
+    },
+    "supportsHttpsTrafficOnly": {
+      "value": true
+    }
+  }
+}
