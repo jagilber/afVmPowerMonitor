@@ -2,12 +2,21 @@
 azure function to monitor virtual machine power states and deallocate after specified amount of time
 # Create Azure Function to monitor and deallocate virtual machine resources
 
-This template deploys the following resources:
+#### This template deploys the following resources:
 - .net framework azure function v2
 - storage account v2
 
+#### Required
+- azure client id and secret for function authentication
 
-Click the button below to deploy
+
+#### Optional
+- sendgrid api key for email notifications  
+  NOTE: sendgrid account is free for 100 emails / day  
+  (send grid signup)[https://signup.sendgrid.com/]
+
+
+#### Click the button below to deploy
 
 <a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fjagilber%2FafVmPowerMonitor%2Fmaster%2FafVmPowerMonitor%2FafVmPowerMonitor.json" target="_blank">
     <img src="http://azuredeploy.net/deploybutton.png"/>
