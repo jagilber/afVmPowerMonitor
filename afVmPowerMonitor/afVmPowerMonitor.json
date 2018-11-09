@@ -26,7 +26,7 @@
       "type": "bool",
       "defaultValue": true
     },
-    "sendgridapikey": {
+    "SendgridApiKey": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
@@ -77,7 +77,7 @@
     },
     "fromEmail": {
       "type": "string",
-      "defaultValue": "",
+      "defaultValue": "afVmPowerMonitor@azureFunction.com",
       "metadata": {
         "description": "from email address used for sending emails"
       }
@@ -88,6 +88,39 @@
       "metadata": {
         "description": "to email address used for sending emails"
       }
+    },
+    "sku": {
+      "type": "string",
+      "allowedValues": [
+        "F1",
+        "D1",
+        "B1",
+        "B2",
+        "B3",
+        "S1",
+        "S2",
+        "S3",
+        "P1",
+        "P2",
+        "P3",
+        "P4"
+      ],
+      "defaultValue": "F1",
+      "metadata": {
+        "description": "The pricing tier for the hosting plan."
+      }
+    },
+    "workerSize": {
+      "type": "string",
+      "allowedValues": [
+        "0",
+        "1",
+        "2"
+      ],
+      "defaultValue": "0",
+      "metadata": {
+        "description": "The instance size of the hosting plan (small, medium, or large)."
+      }
     }
   },
   "variables": {
@@ -95,22 +128,42 @@
     "webSiteName": "[take( toLower( concat( parameters('functionName'), uniqueString(resourceGroup().id) ) ),24)]",
     "kustoApiVersion": "2018-09-07-preview",
     "apiVersion": "2016-09-01",
-    "virtualMachineApiVersion": "2017-12-01"
+    "virtualMachineApiVersion": "2017-12-01",
+    "hostingPlanName": "[parameters('functionName')]",
+    "sourceCodeRepositoryURL": "https://github.com/jagilber/afVmPowerMonitor.git",
+    "sourceCodeBranch": "master",
+    "sourceCodeManualIntegration": true,
+    "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
   },
   "resources": [
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2016-09-01",
+      "name": "[variables('hostingPlanName')]",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "[parameters('sku')]",
+        "capacity": "[parameters('workerSize')]"
+      },
+      "properties": {
+        "name": "[variables('hostingPlanName')]"
+      }
+    },
     {
       "name": "[variables('webSiteName')]",
       "type": "Microsoft.Web/sites",
       "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "[resourceId('microsoft.insights/components/', parameters('functionName'))]"
       ],
       "properties": {
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
         "siteConfig": {
           "appSettings": [
             {
               "name": "AzureWebJobsDisableHomePage",
-              "value": "False"
+              "value": "[parameters('AzureWebJobsDisableHomePage')]"
             },
             {
               "name": "AzureTenantId",
@@ -153,8 +206,8 @@
               "value": "[parameters('ConsecutivePoweredOnActionCount')]"
             },
             {
-              "name": "SendGridApiKey",
-              "value": "[parameters('sendgridapikey')]"
+              "name": "SendgridApiKey",
+              "value": "[parameters('SendgridApiKey')]"
             },
             {
               "name": "fromEmail",
@@ -191,6 +244,10 @@
             {
               "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
               "value": "[reference(resourceId('microsoft.insights/components/', parameters('functionName')), '2015-05-01').InstrumentationKey]"
+            },
+            {
+              "name": "Project",
+              "value": "afVmPowerMonitor"
             }
           ]
         },
@@ -198,6 +255,35 @@
         "clientAffinityEnabled": false,
         "reserved": false
       },
+      "resources": [
+        {
+          "apiVersion": "2015-08-01",
+          "name": "appsettings",
+          "type": "config",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', variables('webSiteName'))]",
+            "[resourceId('Microsoft.Web/Sites/sourcecontrols', variables('webSiteName'), 'web')]",
+            "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
+          ],
+          "properties": {
+            "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
+            "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+          }
+        },
+        {
+          "apiVersion": "2015-08-01",
+          "name": "web",
+          "type": "sourcecontrols",
+          "dependsOn": [
+            "[resourceId('Microsoft.Web/Sites', variables('webSiteName'))]"
+          ],
+          "properties": {
+            "RepoUrl": "[variables('sourceCodeRepositoryURL')]",
+            "branch": "[variables('sourceCodeBranch')]",
+            "IsManualIntegration": "[variables('sourceCodeManualIntegration')]"
+          }
+        }
+      ],
       "apiVersion": "2018-02-01",
       "location": "[resourcegroup().location]",
       "kind": "functionapp"

@@ -1,21 +1,54 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
-  "contentVersion": "1.0.0.0",
   "parameters": {
-    "functionName": {
-      "value": "vmPowerMonitor"
-    },
-    "storageAccountNamePrefix": {
-      "value": "gpv2afweb"
-    },
-    "storageAccountType": {
-      "value": "Standard_LRS"
-    },
-    "storageAccountKind": {
-      "value": "StorageV2"
-    },
-    "supportsHttpsTrafficOnly": {
-      "value": true
-    }
-  }
+      "AzureClientId": {
+          "value": ""
+      },
+      "AzureSecret": {
+          "value": ""
+      },
+      "AzureWebJobsDisableHomePage": {
+          "value": "False"
+      },
+      "ConsecutivePoweredOnActionCount": {
+          "value": "4"
+      },
+      "ConsecutivePoweredOnEmailCount": {
+          "value": "3"
+      },
+      "fromEmail": {
+          "value": "vmPowerMonitor@azureFunction.com"
+      },
+      "FunctionJsonStorageContainer": {
+          "value": "$web"
+      },
+      "functionName": {
+          "value": "vmPowerMonitor"
+      },
+      "SendgridApiKey": {
+          "value": ""
+      },
+      "sku":{
+        "value": "F1"
+      },
+      "storageAccountKind": {
+          "value": "StorageV2"
+      },
+      "storageAccountNamePrefix": {
+          "value": "gpv2afweb"
+      },
+      "storageAccountType": {
+          "value": "Standard_LRS"
+      },
+      "supportsHttpsTrafficOnly": {
+          "value": true
+      },
+      "toEmail": {
+          "value": ""
+      },
+      "workerSize": {
+        "value": "0"
+      }
+  },
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0"
 }
