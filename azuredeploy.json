@@ -169,10 +169,10 @@
             "ConsecutivePoweredOnActionCount": "[parameters('ConsecutivePoweredOnActionCount')]",
             "fromEmail": "[parameters('fromEmail')]",
             "toEmail": "[parameters('toEmail')]",
-            "FUNCTIONS_EXTENSION_VERSION":"~2",
+            "FUNCTIONS_EXTENSION_VERSION": "~2",
             "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1)]",
             "WEBSITE_CONTENTSHARE": "[concat(toLower(variables('webSiteName')), 'share')]",
-            "WEBSITE_NODE_DEFAULT_VERSION":"8.11.1",
+            "WEBSITE_NODE_DEFAULT_VERSION": "8.11.1",
             "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('microsoft.insights/components/', parameters('functionName')), '2015-05-01').InstrumentationKey]"
           }
         },
