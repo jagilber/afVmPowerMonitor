@@ -38,14 +38,14 @@
       "defaultValue": "False",
       "metadata": {
         "description": "enables or disables the azure function home page showing function status."
-      },
-    "ScheduleAppSettings":{
-      "type":"string",
-      "defaultValue":"0 0 */4 * * *",
-      "metadata":{
-        "description":"cron value for function default schedule every 4 hours: 0 0 */4 * * *"
       }
-    }
+    },
+    "ScheduleAppSettings": {
+      "type": "string",
+      "defaultValue": "0 0 */4 * * *",
+      "metadata": {
+        "description": "cron value for function default schedule every 4 hours: 0 0 */4 * * *"
+      }
     },
     "AzureClientId": {
       "type": "string",
@@ -163,6 +163,7 @@
             "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
             "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
             "AzureWebJobsDisableHomePage": "[parameters('AzureWebJobsDisableHomePage')]",
+            "ScheduleAppSettings": "[parameters('ScheduleAppSettings')]",
             "SendgridApiKey": "[parameters('SendgridApiKey')]",
             "AzureTenantId": "[subscription().tenantId]",
             "AzureClientId": "[parameters('AzureClientId')]",
