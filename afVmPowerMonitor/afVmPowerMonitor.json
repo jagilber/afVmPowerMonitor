@@ -107,7 +107,7 @@
       ],
       "defaultValue": "F1",
       "metadata": {
-        "description": "The pricing tier for the hosting plan."
+        "description": "The pricing tier for the hosting plan. F1 is free."
       }
     },
     "workerSize": {
@@ -119,46 +119,45 @@
       ],
       "defaultValue": "0",
       "metadata": {
-        "description": "The instance size of the hosting plan (small, medium, or large)."
+        "description": "The instance size of the hosting plan (small 0, medium 1, or large 2)."
       }
     }
   },
   "variables": {
-    "storageAccountName": "[take( toLower( concat( parameters('storageAccountNamePrefix'), uniqueString(resourceGroup().id) ) ),24)]",
-    "webSiteName": "[take( toLower( concat( parameters('functionName'), uniqueString(resourceGroup().id) ) ),24)]",
-    "kustoApiVersion": "2018-09-07-preview",
     "apiVersion": "2016-09-01",
-    "virtualMachineApiVersion": "2017-12-01",
-    "hostingPlanName": "[parameters('functionName')]",
-    "sourceCodeRepositoryURL": "https://github.com/jagilber/afVmPowerMonitor.git",
+    "kustoApiVersion": "2018-09-07-preview",
     "sourceCodeBranch": "master",
     "sourceCodeManualIntegration": true,
-    "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]"
+    "sourceCodeRepositoryURL": "https://github.com/jagilber/afVmPowerMonitor.git",
+    "storageAccountName": "[take( toLower( concat( parameters('storageAccountNamePrefix'), uniqueString(resourceGroup().id) ) ),24)]",
+    "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
+    "virtualMachineApiVersion": "2017-12-01",
+    "webSiteName": "[take( toLower( concat( parameters('functionName'), uniqueString(resourceGroup().id) ) ),24)]"
   },
   "resources": [
     {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2016-09-01",
-      "name": "[variables('hostingPlanName')]",
+      "name": "[parameters('functionName')]",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "[parameters('sku')]",
         "capacity": "[parameters('workerSize')]"
       },
       "properties": {
-        "name": "[variables('hostingPlanName')]"
+        "name": "[parameters('functionName')]"
       }
     },
     {
       "name": "[variables('webSiteName')]",
       "type": "Microsoft.Web/sites",
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+        "[resourceId('Microsoft.Web/serverfarms', parameters('functionName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "[resourceId('microsoft.insights/components/', parameters('functionName'))]"
       ],
       "properties": {
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('hostingPlanName'))]",
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('functionName'))]",
         "siteConfig": {
           "appSettings": [
             {
@@ -275,7 +274,8 @@
           "name": "web",
           "type": "sourcecontrols",
           "dependsOn": [
-            "[resourceId('Microsoft.Web/Sites', variables('webSiteName'))]"
+            "[resourceId('Microsoft.Web/Sites', variables('webSiteName'))]",
+            "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]"
           ],
           "properties": {
             "RepoUrl": "[variables('sourceCodeRepositoryURL')]",
