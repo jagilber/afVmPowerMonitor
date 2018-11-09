@@ -1,6 +1,6 @@
 # afVmPowerMonitor
 azure function to monitor virtual machine power states and deallocate after specified amount of time
-# Create Azure Function to monitor and deallocate virtual machine resources
+# C# Azure Function v2 to monitor and deallocate virtual machine and kusto resources at specified consecutive powered on count
 
 #### This template deploys the following resources:
 - .net framework azure function v2
@@ -28,3 +28,6 @@ iwr "https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-r
 <a href="http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fjagilber%2FafVmPowerMonitor%2Fmaster%2FafVmPowerMonitor%2FafVmPowerMonitor.json" target="_blank">
     <img src="http://armviz.io/visualizebutton.png"/>
 </a>
+
+
+![portal template settings](../afVmPowerMonitor/images/portal-template-settings.1.png)
