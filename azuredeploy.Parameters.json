@@ -15,7 +15,7 @@
       "ConsecutivePoweredOnEmailCount": {
           "value": "3"
       },
-      "fromEmail": {
+      "FromEmail": {
           "value": "vmPowerMonitor@azureFunction.com"
       },
       "FunctionJsonStorageContainer": {
@@ -39,7 +39,7 @@
       "supportsHttpsTrafficOnly": {
           "value": true
       },
-      "toEmail": {
+      "ToEmail": {
           "value": ""
       },
       "ScheduleAppSettings":{

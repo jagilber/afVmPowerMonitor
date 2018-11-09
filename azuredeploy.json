@@ -82,14 +82,14 @@
         "description": "number of discoveries of vm before sending deallocate action. function runs every 4 hours."
       }
     },
-    "fromEmail": {
+    "FromEmail": {
       "type": "string",
       "defaultValue": "afVmPowerMonitor@azureFunction.com",
       "metadata": {
         "description": "from email address used for sending emails"
       }
     },
-    "toEmail": {
+    "ToEmail": {
       "type": "string",
       "defaultValue": "",
       "metadata": {
@@ -175,8 +175,8 @@
             "ApiVersion": "[variables('apiVersion')]",
             "ConsecutivePoweredOnEmailCount": "[parameters('ConsecutivePoweredOnEmailCount')]",
             "ConsecutivePoweredOnActionCount": "[parameters('ConsecutivePoweredOnActionCount')]",
-            "fromEmail": "[parameters('fromEmail')]",
-            "toEmail": "[parameters('toEmail')]",
+            "FromEmail": "[parameters('FromEmail')]",
+            "ToEmail": "[parameters('ToEmail')]",
             "FUNCTIONS_EXTENSION_VERSION": "~2",
             "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1)]",
             "WEBSITE_CONTENTSHARE": "[concat(toLower(variables('webSiteName')), 'share')]",

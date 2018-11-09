@@ -2,6 +2,7 @@
 using Microsoft.Azure.Management.ResourceManager;
 using Microsoft.Azure.Management.ResourceManager.Models;
 using Microsoft.Azure.WebJobs.Host;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.Rest.Azure.Authentication;
 //using Microsoft.WindowsAzure.Management.Compute;
@@ -23,7 +24,7 @@ namespace afVmPowerMonitor
 {
     internal class Program
     {
-        private static TraceWriter _log;
+        private static ILogger _log;
         private string _apiVersion;
         private string _baseUri = "https://management.azure.com";
         private string _clientId;
@@ -47,11 +48,11 @@ namespace afVmPowerMonitor
         private string _virtualMachineApiVersion;
         private string _webJobsStorage;
 
-        public Program(TraceWriter log)
+        public Program(ILogger log)
         {
             //https://docs.microsoft.com/en-us/rest/api/
             _log = log;
-            _log.Info($"Program instance .ctor: {DateTime.Now}");
+            _log.LogInformation($"Program instance .ctor: {DateTime.Now}");
             _tenantId = Environment.GetEnvironmentVariable("AzureTenantId");
             _clientId = Environment.GetEnvironmentVariable("AzureClientId");
             _secret = Environment.GetEnvironmentVariable("AzureSecret");
@@ -59,8 +60,8 @@ namespace afVmPowerMonitor
             _kustoApiVersion = Environment.GetEnvironmentVariable("KustoApiVersion");
             _apiVersion = Environment.GetEnvironmentVariable("ApiVersion");
             _virtualMachineApiVersion = Environment.GetEnvironmentVariable("VirtualMachineApiVersion");
-            _fromEmail = Environment.GetEnvironmentVariable("fromEmail");
-            _toEmail = Environment.GetEnvironmentVariable("toEmail");
+            _fromEmail = Environment.GetEnvironmentVariable("FromEmail");
+            _toEmail = Environment.GetEnvironmentVariable("ToEmail");
             _message = Environment.GetEnvironmentVariable("message");
             _sendGridApiKey = Environment.GetEnvironmentVariable("sendGridApiKey");
             _consecutivePoweredOnEmailCount = Convert.ToInt32(Environment.GetEnvironmentVariable("ConsecutivePoweredOnEmailCount"));
@@ -71,14 +72,14 @@ namespace afVmPowerMonitor
 
             if (new List<string> { _tenantId, _clientId, _secret, _subscriptionId }.Any(i => String.IsNullOrEmpty(i)))
             {
-                _log.Error("Please provide ENV vars for AzureTenantId, AzureClientId, AzureSecret and AzureSubscriptionId.");
+                _log.LogError("Please provide ENV vars for AzureTenantId, AzureClientId, AzureSecret and AzureSubscriptionId.");
                 return;
             }
         }
 
         public void Execute()
         {
-            _log.Info($"Execute:{++_executionCount}:\r\n\t{_tenantId}\r\n\t{_clientId}\r\n\t{_secret}\r\n\t{_subscriptionId}");
+            _log.LogInformation($"Execute:{++_executionCount}:\r\n\t{_tenantId}\r\n\t{_clientId}\r\n\t{_secret}\r\n\t{_subscriptionId}");
             //_monitoredResources.Clear();
             // Build the service credentials and Azure Resource Manager clients
             Microsoft.Rest.ServiceClientCredentials serviceCreds = ApplicationTokenProvider.LoginSilentAsync(_tenantId, _clientId, _secret).Result;
@@ -99,10 +100,10 @@ namespace afVmPowerMonitor
 
             SyncResources();
 
-            _log.Info("Listing resource groups:");
+            _log.LogInformation("Listing resource groups:");
             _resourceClient.ResourceGroups.List().ToList().ForEach(rg =>
             {
-                _log.Info(string.Format("\tName: {0}, Id: {1}", rg.Name, rg.Id));
+                _log.LogInformation(string.Format("\tName: {0}, Id: {1}", rg.Name, rg.Id));
             });
 
             CheckVmPowerStates();
@@ -152,27 +153,27 @@ namespace afVmPowerMonitor
                 .ToList()
                 .ForEach(res =>
                 {
-                    _log.Warning(string.Format("Kusto cluster \tName: {0}, Id: {1}", res.Name, res.Id));
+                    _log.LogWarning(string.Format("Kusto cluster \tName: {0}, Id: {1}", res.Name, res.Id));
                     kustoClusterIds.Add(res.Id);
                 });
 
             foreach (string cluster in kustoClusterIds)
             {
                 GenericResource clusterResource = _resourceClient.Resources.GetById(cluster, _kustoApiVersion);
-                _log.Info(JsonConvert.SerializeObject(clusterResource, Formatting.Indented));
+                _log.LogInformation(JsonConvert.SerializeObject(clusterResource, Formatting.Indented));
             }
 
             string response = GET("providers/Microsoft.Kusto/clusters", null, _kustoApiVersion);
 
             if (string.IsNullOrEmpty(response))
             {
-                _log.Error("CheckKustoPowerStates:ERROR:null response");
+                _log.LogError("CheckKustoPowerStates:ERROR:null response");
                 return false;
             }
 
             KustoClusterResults[] clusterResults = JsonConvert.DeserializeObject<KustoClusterResults[]>(JObject.Parse(response)["value"].ToString());
 
-            _log.Info($"{JsonConvert.SerializeObject(clusterResults, Formatting.Indented)}");
+            _log.LogInformation($"{JsonConvert.SerializeObject(clusterResults, Formatting.Indented)}");
 
             while (true)
             {
@@ -188,7 +189,7 @@ namespace afVmPowerMonitor
                 }
             }
 
-            _log.Info($"kusto cluster results count: {allResults.Count}");
+            _log.LogInformation($"kusto cluster results count: {allResults.Count}");
 
             // check properties/state to see if stopped or started
             foreach (KustoClusterResults result in allResults)
@@ -210,7 +211,7 @@ namespace afVmPowerMonitor
                         string aresult = POST($"{_baseUri}{resource.Id}/stop", null, _kustoApiVersion);
                     }
 
-                    _log.Warning($"running kusto cluster {result}");
+                    _log.LogWarning($"running kusto cluster {result}");
                 }
                 else
                 {
@@ -242,11 +243,11 @@ namespace afVmPowerMonitor
                     _msgBuilder.AppendLine($"<p>{result.Name}{action}</p>");
                 }
 
-                _log.Warning($"{_msgBuilder.ToString()}");
+                _log.LogWarning($"{_msgBuilder.ToString()}");
             }
             else
             {
-                _log.Info("there are *no* running kusto clusters in subscription");
+                _log.LogInformation("there are *no* running kusto clusters in subscription");
             }
 
             return retval;
@@ -264,7 +265,7 @@ namespace afVmPowerMonitor
 
             if (string.IsNullOrEmpty(response))
             {
-                _log.Error("CheckVmPowerStates:ERROR:null response");
+                _log.LogError("CheckVmPowerStates:ERROR:null response");
                 return false;
             }
 
@@ -282,7 +283,7 @@ namespace afVmPowerMonitor
                 }
             }
 
-            _log.Info($"vm results count: {allResults.Count}");
+            _log.LogInformation($"vm results count: {allResults.Count}");
 
             foreach (VMResults result in allResults)
             {
@@ -310,7 +311,7 @@ namespace afVmPowerMonitor
                     UpdateResourcePoweredOff(mresource);
                 }
 
-                _log.Info($"vm instance view: {JsonConvert.SerializeObject(instance, Formatting.Indented)}");
+                _log.LogInformation($"vm instance view: {JsonConvert.SerializeObject(instance, Formatting.Indented)}");
             }
 
             if (vmRunningResults.Count > 0)
@@ -336,7 +337,7 @@ namespace afVmPowerMonitor
                     _msgBuilder.AppendLine($"<p>{result.Name}{action}</p>");
                 }
 
-                _log.Warning($"{_msgBuilder.ToString()}");
+                _log.LogWarning($"{_msgBuilder.ToString()}");
             }
 
             return retval;
@@ -357,7 +358,7 @@ namespace afVmPowerMonitor
                 VmssVMInstanceResults vmInstance = JsonConvert.DeserializeObject<VmssVMInstanceResults>(instanceResponse);
                 vmInstance.id = instanceUri.AbsolutePath;
 
-                _log.Info($"vm instance view: {JsonConvert.SerializeObject(vmInstance, Formatting.Indented)}");
+                _log.LogInformation($"vm instance view: {JsonConvert.SerializeObject(vmInstance, Formatting.Indented)}");
                 MonitoredResource mresource = new MonitoredResource(new GenericResource(result.id, result.name, result.type));
 
                 string pattern = @".+/(\d+)$";
@@ -413,7 +414,7 @@ namespace afVmPowerMonitor
                     _msgBuilder.AppendLine($"<p>instance: {result.InstanceId}{action}</p>");
                 }
 
-                _log.Warning(_msgBuilder.ToString());
+                _log.LogWarning(_msgBuilder.ToString());
             }
 
             return retval;
@@ -421,7 +422,7 @@ namespace afVmPowerMonitor
 
         private string GETASM(Uri uri)
         {
-            _log.Info($"GET:{uri.ToString()}");
+            _log.LogInformation($"GET:{uri.ToString()}");
             // Create the request
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
             request.Headers.Add("x-ms-version", "2014-05-01");
@@ -436,7 +437,7 @@ namespace afVmPowerMonitor
             }
             catch (Exception ex)
             {
-                _log.Error("Error from : " + uri + ": " + ex.Message);
+                _log.LogError("Error from : " + uri + ": " + ex.Message);
                 return null;
             }
 
@@ -451,7 +452,7 @@ namespace afVmPowerMonitor
 
         private string GET(Uri uri)
         {
-            _log.Info($"GET:{uri.ToString()}");
+            _log.LogInformation($"GET:{uri.ToString()}");
             // Create the request
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
             request.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + _token);
@@ -466,7 +467,7 @@ namespace afVmPowerMonitor
             }
             catch (Exception ex)
             {
-                _log.Error("Error from : " + uri + ": " + ex.Message);
+                _log.LogError("Error from : " + uri + ": " + ex.Message);
                 return null;
             }
 
@@ -505,12 +506,12 @@ namespace afVmPowerMonitor
 
             if (result == null)
             {
-                _log.Error("failed to obtain JWT token");
+                _log.LogError("failed to obtain JWT token");
                 throw new InvalidOperationException("Failed to obtain the JWT token");
             }
 
             _token = result.AccessToken;
-            _log.Info($"token:{_token}");
+            _log.LogInformation($"token:{_token}");
 
             return _token;
         }
@@ -524,7 +525,7 @@ namespace afVmPowerMonitor
             AuthenticationResult graphResult = authenticationContext.AcquireTokenAsync(resource: "https://graph.microsoft.com/", clientCredential: credential).Result;
 
             _graphToken = graphResult.AccessToken;
-            _log.Info($"graph token:{_graphToken}");
+            _log.LogInformation($"graph token:{_graphToken}");
             return _graphToken;
         }
 
@@ -619,7 +620,7 @@ namespace afVmPowerMonitor
 
             if (string.IsNullOrEmpty(response))
             {
-                _log.Error("CheckVmssPowerStates:ERROR:null response");
+                _log.LogError("CheckVmssPowerStates:ERROR:null response");
                 return allResults;
             }
 
@@ -637,7 +638,7 @@ namespace afVmPowerMonitor
                 }
             }
 
-            _log.Info($"vmss results count: {allResults.Count}");
+            _log.LogInformation($"vmss results count: {allResults.Count}");
             return allResults;
         }
 
@@ -652,7 +653,7 @@ namespace afVmPowerMonitor
 
                 if (string.IsNullOrEmpty(response))
                 {
-                    _log.Error("CheckVmssPowerStates:ERROR:null response");
+                    _log.LogError("CheckVmssPowerStates:ERROR:null response");
                     return vmssVmResults;
                 }
 
@@ -672,7 +673,7 @@ namespace afVmPowerMonitor
 
             }
 
-            _log.Info($"vmss vm results count: {vmssVmResults.Count}");
+            _log.LogInformation($"vmss vm results count: {vmssVmResults.Count}");
             return vmssVmResults;
         }
         private MonitoredResourcesResult LoadResultsFromJson(string file, bool clean = true)
@@ -696,13 +697,13 @@ namespace afVmPowerMonitor
                 }
                 else
                 {
-                    _log.Info("loadresultsfromjson:json storage not configured");
+                    _log.LogInformation("loadresultsfromjson:json storage not configured");
                     return result;
                 }
             }
             catch (Exception e)
             {
-                _log.Warning($"unable to read results from json {e.ToString()}");
+                _log.LogWarning($"unable to read results from json {e.ToString()}");
                 return result;
             }
         }
@@ -734,7 +735,7 @@ namespace afVmPowerMonitor
             }
             catch (Exception ex)
             {
-                _log.Info("Error setting up stream writer: " + ex.Message);
+                _log.LogInformation("Error setting up stream writer: " + ex.Message);
             }
 
             // Get the response
@@ -742,11 +743,11 @@ namespace afVmPowerMonitor
             try
             {
                 response = (HttpWebResponse)request.GetResponse();
-                _log.Info($"POST: response:{JsonConvert.SerializeObject(response, Formatting.Indented)}");
+                _log.LogInformation($"POST: response:{JsonConvert.SerializeObject(response, Formatting.Indented)}");
             }
             catch (Exception ex)
             {
-                _log.Info("Error from : " + uri + ": " + ex.Message);
+                _log.LogInformation("Error from : " + uri + ": " + ex.Message);
                 return null;
             }
 
@@ -754,7 +755,7 @@ namespace afVmPowerMonitor
             using (StreamReader streamReader = new StreamReader(response.GetResponseStream()))
             {
                 result = streamReader.ReadToEnd();
-                _log.Info($"POST: result:{JsonConvert.SerializeObject(result, Formatting.Indented)}");
+                _log.LogInformation($"POST: result:{JsonConvert.SerializeObject(result, Formatting.Indented)}");
             }
 
             return result;
@@ -788,7 +789,7 @@ namespace afVmPowerMonitor
             }
             else
             {
-                _log.Info("SaveResultsToJson: json storage not configured");
+                _log.LogInformation("SaveResultsToJson: json storage not configured");
             }
         }
 
@@ -817,9 +818,9 @@ namespace afVmPowerMonitor
             smtpPostBody.message.toRecipients = recipients.ToArray();
 
             string smtpPostBodyString = JsonConvert.SerializeObject(smtpPostBody, Formatting.None);
-            _log.Info($"send mail info:{smtpPostBodyString}");
+            _log.LogInformation($"send mail info:{smtpPostBodyString}");
             string response = POST(graphSendMailUri, smtpPostBodyString, _graphToken);
-            _log.Info($"sendGraphEmailRESTResponse: {response}");
+            _log.LogInformation($"sendGraphEmailRESTResponse: {response}");
 
          //   string smtpPostRestBody = JsonConvert.
          */
@@ -833,7 +834,7 @@ namespace afVmPowerMonitor
 
             if (string.IsNullOrEmpty(_sendGridApiKey) | string.IsNullOrEmpty(_toEmail) | string.IsNullOrEmpty(_fromEmail))
             {
-                _log.Info("sendgridemail:not configured");
+                _log.LogInformation("sendgridemail:not configured");
                 return false;
             }
 
@@ -851,7 +852,7 @@ namespace afVmPowerMonitor
             SendGridMessage msg = MailHelper.CreateSingleEmailToMultipleRecipients(from, tos, subject, plainTextContent, htmlContent);
             Response response = client.SendEmailAsync(msg).Result;
 
-            _log.Info($"sendgrid response: {JsonConvert.SerializeObject(response, Formatting.Indented)}");
+            _log.LogInformation($"sendgrid response: {JsonConvert.SerializeObject(response, Formatting.Indented)}");
             return true;
         }
 
@@ -898,7 +899,7 @@ namespace afVmPowerMonitor
         private MonitoredResource UpdateResourcePoweredOn(MonitoredResource resource)
         {
             MonitoredResource r = GetMonitoredResource(resource);
-            _log.Info($"UpdateResourcePoweredOn:{JsonConvert.SerializeObject(r, Formatting.Indented)}");
+            _log.LogInformation($"UpdateResourcePoweredOn:{JsonConvert.SerializeObject(r, Formatting.Indented)}");
             bool wasPoweredOn = r.CurrentlyPoweredOn;
             r.CurrentlyPoweredOn = true;
             r.LastSeen = DateTime.Now;
@@ -919,14 +920,14 @@ namespace afVmPowerMonitor
             {
                 r.LastEmailSent = DateTime.Now;
                 r.SendEmail = true;
-                _log.Warning($"resource powered on. sending email:\r\n{JsonConvert.SerializeObject(r, Formatting.Indented)}");
+                _log.LogWarning($"resource powered on. sending email:\r\n{JsonConvert.SerializeObject(r, Formatting.Indented)}");
             }
 
             if (r.ConsecutivePoweredOn >= _consecutivePoweredOnActionCount)
             {
                 r.LastActionExecuted = DateTime.Now;
                 r.ExecuteAction = true;
-                _log.Warning($"resource powered on. executing action:\r\n{JsonConvert.SerializeObject(r, Formatting.Indented)}");
+                _log.LogWarning($"resource powered on. executing action:\r\n{JsonConvert.SerializeObject(r, Formatting.Indented)}");
             }
 
             AddOrUpdateResource(r);
