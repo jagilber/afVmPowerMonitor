@@ -1,5 +1,6 @@
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Host;
+using System;
 
 namespace afVmPowerMonitor
 {
@@ -22,10 +23,13 @@ namespace afVmPowerMonitor
         */
 
         [FunctionName("Function")]
-        public static void Run([TimerTrigger("0 0 */4 * * *")]TimerInfo myTimer, TraceWriter log) // for production run every 4 hours
+        //public static void Run([TimerTrigger("0 0 */4 * * *")]TimerInfo myTimer, TraceWriter log) // for production run every 4 hours
+            
+        public static void Run([TimerTrigger("%ScheduleAppSettings%")]TimerInfo myTimer, TraceWriter log) // for production run every 4 hours
         //public static void Run([TimerTrigger("0 */1 * * * *", RunOnStartup = true)]TimerInfo myTimer, TraceWriter log) // for test run every minute
         //public static void Run([TimerTrigger("0 */1 * * * *")]TimerInfo myTimer, TraceWriter log) // for test run every minute
         {
+            Environment.GetEnvironmentVariable("TimerTrigger");
             if (_program == null)
             {
                 _program = new Program(log);

@@ -38,7 +38,14 @@
       "defaultValue": "False",
       "metadata": {
         "description": "enables or disables the azure function home page showing function status."
+      },
+    "ScheduleAppSettings":{
+      "type":"string",
+      "defaultValue":"0 0 */4 * * *",
+      "metadata":{
+        "description":"cron value for function default schedule every 4 hours: 0 0 */4 * * *"
       }
+    }
     },
     "AzureClientId": {
       "type": "string",
