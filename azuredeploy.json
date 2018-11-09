@@ -88,26 +88,6 @@
       "metadata": {
         "description": "to email address used for sending emails"
       }
-    },
-    "sku": {
-      "type": "string",
-      "allowedValues": [
-        "Y1"
-      ],
-      "defaultValue": "Y1",
-      "metadata": {
-        "description": "The pricing tier for the hosting plan. Y1 is cheapest function plan."
-      }
-    },
-    "workerSize": {
-      "type": "string",
-      "allowedValues": [
-        "0"
-      ],
-      "defaultValue": "0",
-      "metadata": {
-        "description": "The instance size of the hosting plan (small 0, medium 1, or large 2)."
-      }
     }
   },
   "variables": {
@@ -122,29 +102,14 @@
     "webSiteName": "[take( toLower( concat( parameters('functionName'), uniqueString(resourceGroup().id) ) ),24)]"
   },
   "resources": [
-    /*  {
-      "type": "Microsoft.Web/serverfarms",
-      "apiVersion": "2016-09-01",
-      "name": "[variables('webSiteName')]",
-      "location": "[resourceGroup().location]",
-      "sku": {
-        "name": "[parameters('sku')]",
-        "capacity": "[parameters('workerSize')]"
-      },
-      "properties": {
-        "name": "[variables('webSiteName')]"
-      }
-    },*/
     {
       "name": "[variables('webSiteName')]",
       "type": "Microsoft.Web/sites",
       "dependsOn": [
-        //"[resourceId('Microsoft.Web/serverfarms', variables('webSiteName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "[resourceId('microsoft.insights/components/', parameters('functionName'))]"
       ],
       "properties": {
-        //"serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('webSiteName'))]",
         "siteConfig": {
           "appSettings": [
             {
@@ -192,7 +157,6 @@
             "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
             "AzureWebJobsDisableHomePage": "[parameters('AzureWebJobsDisableHomePage')]",
             "SendgridApiKey": "[parameters('SendgridApiKey')]",
-            //"Project": "afVmPowerMonitor",
             "AzureTenantId": "[subscription().tenantId]",
             "AzureClientId": "[parameters('AzureClientId')]",
             "AzureSecret": "[parameters('AzureSecret')]",

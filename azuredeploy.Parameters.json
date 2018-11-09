@@ -27,9 +27,6 @@
       "SendgridApiKey": {
           "value": ""
       },
-      "sku":{
-        "value": "Y1"
-      },
       "storageAccountKind": {
           "value": "StorageV2"
       },
@@ -44,9 +41,6 @@
       },
       "toEmail": {
           "value": ""
-      },
-      "workerSize": {
-        "value": "0"
       }
   },
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
