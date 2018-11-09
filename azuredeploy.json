@@ -122,7 +122,7 @@
     "webSiteName": "[take( toLower( concat( parameters('functionName'), uniqueString(resourceGroup().id) ) ),24)]"
   },
   "resources": [
-  /*  {
+    /*  {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2016-09-01",
       "name": "[variables('webSiteName')]",
@@ -147,70 +147,6 @@
         //"serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('webSiteName'))]",
         "siteConfig": {
           "appSettings": [
-            {
-              "name": "AzureWebJobsDisableHomePage",
-              "value": "[parameters('AzureWebJobsDisableHomePage')]"
-            },
-            {
-              "name": "AzureTenantId",
-              "value": "[subscription().tenantId]"
-            },
-            {
-              "name": "AzureClientId",
-              "value": "[parameters('AzureClientId')]"
-            },
-            {
-              "name": "AzureSecret",
-              "value": "[parameters('AzureSecret')]"
-            },
-            {
-              "name": "AzureSubscriptionId",
-              "value": "[subscription().subscriptionId]"
-            },
-            {
-              "name": "FunctionJsonStorageContainer",
-              "value": "[parameters('FunctionJsonStorageContainer')]"
-            },
-            {
-              "name": "KustoApiVersion",
-              "value": "[variables('kustoApiVersion')]"
-            },
-            {
-              "name": "VirtualMachineApiVersion",
-              "value": "[variables('virtualMachineApiVersion')]"
-            },
-            {
-              "name": "ApiVersion",
-              "value": "[variables('apiVersion')]"
-            },
-            {
-              "name": "ConsecutivePoweredOnEmailCount",
-              "value": "[parameters('ConsecutivePoweredOnEmailCount')]"
-            },
-            {
-              "name": "ConsecutivePoweredOnActionCount",
-              "value": "[parameters('ConsecutivePoweredOnActionCount')]"
-            },
-            {
-              "name": "SendgridApiKey",
-              "value": "[parameters('SendgridApiKey')]"
-            },
-            {
-              "name": "fromEmail",
-              "value": "[parameters('fromEmail')]"
-            },
-            {
-              "name": "toEmail",
-              "value": "[parameters('toEmail')]"
-            },
-            {
-              "name": "FUNCTIONS_WORKER_RUNTIME",
-              "value": "dotnet"
-            },
-            {
-              "name": "AzureWebJobsStorage",
-              "value": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1)]"
-            },
             {
               "name": "FUNCTIONS_EXTENSION_VERSION",
               "value": "~2"
@@ -253,7 +189,22 @@
           ],
           "properties": {
             "AzureWebJobsStorage": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
-            "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]"
+            "AzureWebJobsDashboard": "[concat('DefaultEndpointsProtocol=https;AccountName=', variables('storageAccountName'), ';AccountKey=', listKeys(variables('storageAccountid'),'2015-05-01-preview').key1)]",
+            "AzureWebJobsDisableHomePage": "[parameters('AzureWebJobsDisableHomePage')]",
+            "SendgridApiKey": "[parameters('SendgridApiKey')]",
+            "Project": "afVmPowerMonitor",
+            "AzureTenantId": "[subscription().tenantId]",
+            "AzureClientId": "[parameters('AzureClientId')]",
+            "AzureSecret": "[parameters('AzureSecret')]",
+            "AzureSubscriptionId": "[subscription().subscriptionId]",
+            "FunctionJsonStorageContainer": "[parameters('FunctionJsonStorageContainer')]",
+            "KustoApiVersion": "[variables('kustoApiVersion')]",
+            "VirtualMachineApiVersion": "[variables('virtualMachineApiVersion')]",
+            "ApiVersion": "[variables('apiVersion')]",
+            "ConsecutivePoweredOnEmailCount": "[parameters('ConsecutivePoweredOnEmailCount')]",
+            "ConsecutivePoweredOnActionCount": "[parameters('ConsecutivePoweredOnActionCount')]",
+            "fromEmail": "[parameters('fromEmail')]",
+            "toEmail": "[parameters('toEmail')]"
           }
         },
         {
