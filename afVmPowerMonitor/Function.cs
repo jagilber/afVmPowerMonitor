@@ -22,15 +22,15 @@ namespace afVmPowerMonitor
         */
 
         [FunctionName("Function")]
-        public static void Run([TimerTrigger("0 0 */4 * * *")]TimerInfo myTimer, TraceWriter log) // for production run every 4 hours
+        //public static void Run([TimerTrigger("0 0 */4 * * *")]TimerInfo myTimer, TraceWriter log) // for production run every 4 hours
         //public static void Run([TimerTrigger("0 */1 * * * *", RunOnStartup = true)]TimerInfo myTimer, TraceWriter log) // for test run every minute
-        //public static void Run([TimerTrigger("0 */1 * * * *")]TimerInfo myTimer, TraceWriter log) // for test run every minute
+        public static void Run([TimerTrigger("0 */1 * * * *")]TimerInfo myTimer, TraceWriter log) // for test run every minute
         {
             if (_program == null)
             {
                 _program = new Program(log);
             }
-
+            // $(SolutionDir)afVmPowerMonitor\func extensions install
             _program.Execute();
         }
     }

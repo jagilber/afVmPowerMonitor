@@ -92,30 +92,17 @@
     "sku": {
       "type": "string",
       "allowedValues": [
-        "F1",
-        "D1",
-        "B1",
-        "B2",
-        "B3",
-        "S1",
-        "S2",
-        "S3",
-        "P1",
-        "P2",
-        "P3",
-        "P4"
+        "Y1"
       ],
-      "defaultValue": "F1",
+      "defaultValue": "Y1",
       "metadata": {
-        "description": "The pricing tier for the hosting plan. F1 is free."
+        "description": "The pricing tier for the hosting plan. Y1 is cheapest function plan."
       }
     },
     "workerSize": {
       "type": "string",
       "allowedValues": [
-        "0",
-        "1",
-        "2"
+        "0"
       ],
       "defaultValue": "0",
       "metadata": {

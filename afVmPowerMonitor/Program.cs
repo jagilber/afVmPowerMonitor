@@ -4,7 +4,7 @@ using Microsoft.Azure.Management.ResourceManager.Models;
 using Microsoft.Azure.WebJobs.Host;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.Rest.Azure.Authentication;
-using Microsoft.WindowsAzure.Management.Compute;
+//using Microsoft.WindowsAzure.Management.Compute;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
@@ -501,7 +501,7 @@ namespace afVmPowerMonitor
             string authContextURL = "https://login.windows.net/" + _tenantId;
             AuthenticationContext authenticationContext = new AuthenticationContext(authContextURL);
             ClientCredential credential = new ClientCredential(clientId: _clientId, clientSecret: _secret);
-            AuthenticationResult result = authenticationContext.AcquireToken(resource: "https://management.azure.com/", clientCredential: credential);
+            AuthenticationResult result = authenticationContext.AcquireTokenAsync(resource: "https://management.azure.com/", clientCredential: credential).Result;
 
             if (result == null)
             {
@@ -521,7 +521,7 @@ namespace afVmPowerMonitor
             //string authContextURL = "https://login.windows.net/" + _tenantId;
             AuthenticationContext authenticationContext = new AuthenticationContext(authContextURL);
             ClientCredential credential = new ClientCredential(clientId: _clientId, clientSecret: _secret);
-            AuthenticationResult graphResult = authenticationContext.AcquireToken(resource: "https://graph.microsoft.com/", clientCredential: credential);
+            AuthenticationResult graphResult = authenticationContext.AcquireTokenAsync(resource: "https://graph.microsoft.com/", clientCredential: credential).Result;
 
             _graphToken = graphResult.AccessToken;
             _log.Info($"graph token:{_graphToken}");
@@ -595,11 +595,11 @@ namespace afVmPowerMonitor
             CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
             CloudBlobContainer container = blobClient.GetContainerReference(containerName);
 
-            if (blobClient.ListContainers(containerName, ContainerListingDetails.None, null, null).Count() < 1)
+            if (blobClient.ListContainersSegmentedAsync(containerName, null).Result.Results.Count() < 1)
             {
                 if (create)
                 {
-                    container.Create(null, null);
+                    container.CreateAsync(null, null).Wait();
                 }
                 else
                 {
@@ -683,7 +683,7 @@ namespace afVmPowerMonitor
             {
                 if (!string.IsNullOrEmpty(_functionJsonStorageContainer))
                 {
-                    string text = GetStorageBlobReference(file, _functionJsonStorageContainer, false).DownloadText();
+                    string text = GetStorageBlobReference(file, _functionJsonStorageContainer, false).DownloadTextAsync().Result;
 
                     if (clean)
                     {
@@ -778,13 +778,13 @@ namespace afVmPowerMonitor
             if (!string.IsNullOrEmpty(_functionJsonStorageContainer))
             {
                 CloudBlockBlob blockBlob = GetStorageBlobReference(file, _functionJsonStorageContainer, true);
-                blockBlob.UploadText(text);
+                blockBlob.UploadTextAsync(text).Wait();
 
                 // Set the content type
-                blockBlob.FetchAttributes();
+                blockBlob.FetchAttributesAsync().Wait();
                 blockBlob.Properties.ContentType = "application/json";
 
-                blockBlob.SetProperties();
+                blockBlob.SetPropertiesAsync().Wait();
             }
             else
             {
