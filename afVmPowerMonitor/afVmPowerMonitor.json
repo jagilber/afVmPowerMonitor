@@ -122,29 +122,29 @@
     "webSiteName": "[take( toLower( concat( parameters('functionName'), uniqueString(resourceGroup().id) ) ),24)]"
   },
   "resources": [
-    {
+  /*  {
       "type": "Microsoft.Web/serverfarms",
       "apiVersion": "2016-09-01",
-      "name": "[parameters('functionName')]",
+      "name": "[variables('webSiteName')]",
       "location": "[resourceGroup().location]",
       "sku": {
         "name": "[parameters('sku')]",
         "capacity": "[parameters('workerSize')]"
       },
       "properties": {
-        "name": "[parameters('functionName')]"
+        "name": "[variables('webSiteName')]"
       }
-    },
+    },*/
     {
       "name": "[variables('webSiteName')]",
       "type": "Microsoft.Web/sites",
       "dependsOn": [
-        "[resourceId('Microsoft.Web/serverfarms', parameters('functionName'))]",
+        //"[resourceId('Microsoft.Web/serverfarms', variables('webSiteName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
         "[resourceId('microsoft.insights/components/', parameters('functionName'))]"
       ],
       "properties": {
-        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('functionName'))]",
+        //"serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('webSiteName'))]",
         "siteConfig": {
           "appSettings": [
             {
