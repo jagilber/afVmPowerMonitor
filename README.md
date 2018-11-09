@@ -30,4 +30,4 @@ iwr "https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-r
 </a>
 
 
-![portal template settings](../afVmPowerMonitor/images/portal-template-settings.1.png)
+![portal template settings](/afVmPowerMonitor/images/portal-template-settings.1.png)
