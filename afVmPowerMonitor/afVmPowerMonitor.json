@@ -226,7 +226,7 @@
             },
             {
               "name": "FUNCTIONS_EXTENSION_VERSION",
-              "value": "2.0.12165.0"
+              "value": "~2"
             },
             {
               "name": "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING",
