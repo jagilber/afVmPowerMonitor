@@ -21,6 +21,10 @@ namespace afVmPowerMonitor
             A range (- operator)    "5-7 * * * * *"    at hh:mm:05,hh:mm:06, and hh:mm:07 where hh:mm is every minute of every hour (3 times a minute)
             A set of values (, operator)    "5,8,10 * * * * *"    at hh:mm:05,hh:mm:08, and hh:mm:10 where hh:mm is every minute of every hour (3 times a minute)
             An interval value (/ operator)    "0 *\/5 * * * *"    at hh:05:00, hh:10:00, hh:15:00, and so on through hh:55:00 where hh is every hour (12 times an hour)
+
+            $(SolutionDir)afVmPowerMonitor\func extensions install
+            UseDevelopmentStorage=true
+
         */
 
         [FunctionName("Function")]
@@ -30,7 +34,7 @@ namespace afVmPowerMonitor
             {
                 _program = new Program(log);
             }
-            // $(SolutionDir)afVmPowerMonitor\func extensions install
+
             _program.Execute();
         }
     }

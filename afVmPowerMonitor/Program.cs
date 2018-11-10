@@ -1,11 +1,9 @@
 ﻿using Microsoft.Azure.Management.Compute;
 using Microsoft.Azure.Management.ResourceManager;
 using Microsoft.Azure.Management.ResourceManager.Models;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.Rest.Azure.Authentication;
-//using Microsoft.WindowsAzure.Management.Compute;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Blob;
 using Newtonsoft.Json;
@@ -36,9 +34,9 @@ namespace afVmPowerMonitor
         private string _graphToken;
         private string _kustoApiVersion;
         private string _message;
+        private List<MonitoredResource> _monitoredResources = new List<MonitoredResource>();
         private StringBuilder _msgBuilder = new StringBuilder();
         private ResourceManagementClient _resourceClient;
-        private List<MonitoredResource> _monitoredResources = new List<MonitoredResource>();
         private string _secret;
         private string _sendGridApiKey;
         private string _subscriptionId;
@@ -66,7 +64,6 @@ namespace afVmPowerMonitor
             _sendGridApiKey = Environment.GetEnvironmentVariable("sendGridApiKey");
             _consecutivePoweredOnEmailCount = Convert.ToInt32(Environment.GetEnvironmentVariable("ConsecutivePoweredOnEmailCount"));
             _consecutivePoweredOnActionCount = Convert.ToInt32(Environment.GetEnvironmentVariable("ConsecutivePoweredOnActionCount"));
-            //UseDevelopmentStorage=true
             _webJobsStorage = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
             _functionJsonStorageContainer = Environment.GetEnvironmentVariable("FunctionJsonStorageContainer");
 
@@ -81,13 +78,13 @@ namespace afVmPowerMonitor
         {
             _log.LogInformation($"Execute:{++_executionCount}:\r\n\t{_tenantId}\r\n\t{_clientId}\r\n\t{_secret}\r\n\t{_subscriptionId}");
             //_monitoredResources.Clear();
-            // Build the service credentials and Azure Resource Manager clients
+
             Microsoft.Rest.ServiceClientCredentials serviceCreds = ApplicationTokenProvider.LoginSilentAsync(_tenantId, _clientId, _secret).Result;
             _resourceClient = new ResourceManagementClient(serviceCreds);
             _resourceClient.SubscriptionId = _subscriptionId;
             GetAccessToken();
 
-            // load prior results
+            // load prior results if collection empty
             if (_monitoredResources.Count < 1)
             {
                 MonitoredResourcesResult result = LoadResultsFromJson("all.json");
@@ -118,6 +115,48 @@ namespace afVmPowerMonitor
                 SendGridEmail($"{_monitoredResources.Count(x => x.CurrentlyPoweredOn == true)} running resources in your subscription", _msgBuilder.ToString());
                 _msgBuilder.Clear();
             }
+        }
+
+        private static string BuildMessage(MonitoredResource result)
+        {
+            string action = ": none";
+            if (result.SendEmail)
+            {
+                result.SendEmail = false;
+                action = $": executed email action:{result.LastEmailSent}";
+            }
+
+            if (result.ExecuteAction)
+            {
+                result.ExecuteAction = false;
+                action = $": executed power action:{result.LastActionExecuted}";
+            }
+
+            return action;
+        }
+
+        private static string GetResponse(HttpWebRequest request)
+        {
+            HttpWebResponse response = null;
+            try
+            {
+                response = (HttpWebResponse)request.GetResponse();
+                _log.LogInformation($"WEB: response:{JsonConvert.SerializeObject(response, Formatting.Indented)}");
+            }
+            catch (Exception ex)
+            {
+                _log.LogError("WEB: response: error from: " + request.RequestUri + ": " + ex.Message);
+                return null;
+            }
+
+            string result = null;
+            using (StreamReader streamReader = new StreamReader(response.GetResponseStream()))
+            {
+                result = streamReader.ReadToEnd();
+                _log.LogInformation($"WEB: result:{JsonConvert.SerializeObject(result, Formatting.Indented)}");
+            }
+
+            return result;
         }
 
         private void AddOrUpdateResource(MonitoredResource resource)
@@ -153,7 +192,7 @@ namespace afVmPowerMonitor
                 .ToList()
                 .ForEach(res =>
                 {
-                    _log.LogWarning(string.Format("Kusto cluster \tName: {0}, Id: {1}", res.Name, res.Id));
+                    _log.LogInformation(string.Format("Kusto cluster \tName: {0}, Id: {1}", res.Name, res.Id));
                     kustoClusterIds.Add(res.Id);
                 });
 
@@ -172,7 +211,6 @@ namespace afVmPowerMonitor
             }
 
             KustoClusterResults[] clusterResults = JsonConvert.DeserializeObject<KustoClusterResults[]>(JObject.Parse(response)["value"].ToString());
-
             _log.LogInformation($"{JsonConvert.SerializeObject(clusterResults, Formatting.Indented)}");
 
             while (true)
@@ -227,20 +265,7 @@ namespace afVmPowerMonitor
 
                 foreach (MonitoredResource result in kustoRunningResults)
                 {
-                    string action = ": none";
-                    if (result.SendEmail)
-                    {
-                        result.SendEmail = false;
-                        action = $": executed email action:{result.LastEmailSent}";
-                    }
-
-                    if (result.ExecuteAction)
-                    {
-                        result.ExecuteAction = false;
-                        action = $": executed power action:{result.LastActionExecuted}";
-                    }
-
-                    _msgBuilder.AppendLine($"<p>{result.Name}{action}</p>");
+                    _msgBuilder.AppendLine($"<p>{result.Name}{BuildMessage(result)}</p>");
                 }
 
                 _log.LogWarning($"{_msgBuilder.ToString()}");
@@ -321,20 +346,7 @@ namespace afVmPowerMonitor
 
                 foreach (MonitoredResource result in vmRunningResults)
                 {
-                    string action = ": none";
-                    if (result.SendEmail)
-                    {
-                        result.SendEmail = false;
-                        action = $": executed email action:{result.LastEmailSent}";
-                    }
-
-                    if (result.ExecuteAction)
-                    {
-                        result.ExecuteAction = false;
-                        action = $": executed power action:{result.LastActionExecuted}";
-                    }
-
-                    _msgBuilder.AppendLine($"<p>{result.Name}{action}</p>");
+                    _msgBuilder.AppendLine($"<p>{result.Name}{BuildMessage(result)}</p>");
                 }
 
                 _log.LogWarning($"{_msgBuilder.ToString()}");
@@ -354,7 +366,7 @@ namespace afVmPowerMonitor
             {
                 //GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/instanceView?api-version=2017-12-01
                 Uri instanceUri = new Uri($"{_baseUri}{result.id}/instanceView?api-version={_virtualMachineApiVersion}");
-                string instanceResponse = GET(instanceUri);
+                string instanceResponse = GET(instanceUri.ToString());
                 VmssVMInstanceResults vmInstance = JsonConvert.DeserializeObject<VmssVMInstanceResults>(instanceResponse);
                 vmInstance.id = instanceUri.AbsolutePath;
 
@@ -397,18 +409,7 @@ namespace afVmPowerMonitor
 
                 foreach (MonitoredResource result in vmssRunningResults)
                 {
-                    string action = ": none";
-                    if (result.SendEmail)
-                    {
-                        result.SendEmail = false;
-                        action = $": executed email action:{result.LastEmailSent}";
-                    }
-
-                    if (result.ExecuteAction)
-                    {
-                        result.ExecuteAction = false;
-                        action = $": executed power action:{result.LastActionExecuted}";
-                    }
+                    string action = BuildMessage(result);
 
                     _msgBuilder.AppendLine($"<p>resource: {result.Id}</p>");
                     _msgBuilder.AppendLine($"<p>instance: {result.InstanceId}{action}</p>");
@@ -420,70 +421,16 @@ namespace afVmPowerMonitor
             return retval;
         }
 
-        private string GETASM(Uri uri)
+        private string GET(string stringUri)
         {
-            _log.LogInformation($"GET:{uri.ToString()}");
-            // Create the request
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
-            request.Headers.Add("x-ms-version", "2014-05-01");
-            request.ContentType = "*/*";
-            request.Method = "GET";
-
-            // Get the response
-            HttpWebResponse response = null;
-            try
-            {
-                response = (HttpWebResponse)request.GetResponse();
-            }
-            catch (Exception ex)
-            {
-                _log.LogError("Error from : " + uri + ": " + ex.Message);
-                return null;
-            }
-
-            string result = null;
-            using (StreamReader streamReader = new StreamReader(response.GetResponseStream()))
-            {
-                result = streamReader.ReadToEnd();
-            }
-
-            return result;
-        }
-
-        private string GET(Uri uri)
-        {
+            Uri uri = new Uri(stringUri);
             _log.LogInformation($"GET:{uri.ToString()}");
             // Create the request
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
             request.Headers.Add(HttpRequestHeader.Authorization, "Bearer " + _token);
             request.ContentType = "application/json";
             request.Method = "GET";
-
-            // Get the response
-            HttpWebResponse response = null;
-            try
-            {
-                response = (HttpWebResponse)request.GetResponse();
-            }
-            catch (Exception ex)
-            {
-                _log.LogError("Error from : " + uri + ": " + ex.Message);
-                return null;
-            }
-
-            string result = null;
-            using (StreamReader streamReader = new StreamReader(response.GetResponseStream()))
-            {
-                result = streamReader.ReadToEnd();
-            }
-
-            return result;
-        }
-
-        private string GET(string uriString)
-        {
-            Uri uri = new Uri(string.Format(uriString));
-            return GET(uri);
+            return GetResponse(request);
         }
 
         private string GET(string query, string arguments = null, string apiVersion = null)
@@ -497,7 +444,7 @@ namespace afVmPowerMonitor
             return GET(URI);
         }
 
-        private string GetAccessToken()
+        private void GetAccessToken()
         {
             string authContextURL = "https://login.windows.net/" + _tenantId;
             AuthenticationContext authenticationContext = new AuthenticationContext(authContextURL);
@@ -512,37 +459,7 @@ namespace afVmPowerMonitor
 
             _token = result.AccessToken;
             _log.LogInformation($"token:{_token}");
-
-            return _token;
-        }
-
-        private string GetGraphAccessToken()
-        {
-            string authContextURL = "https://login.microsoftonline.com/" + _tenantId + "/oauth2";
-            //string authContextURL = "https://login.windows.net/" + _tenantId;
-            AuthenticationContext authenticationContext = new AuthenticationContext(authContextURL);
-            ClientCredential credential = new ClientCredential(clientId: _clientId, clientSecret: _secret);
-            AuthenticationResult graphResult = authenticationContext.AcquireTokenAsync(resource: "https://graph.microsoft.com/", clientCredential: credential).Result;
-
-            _graphToken = graphResult.AccessToken;
-            _log.LogInformation($"graph token:{_graphToken}");
-            return _graphToken;
-        }
-
-        private MonitoredResource GetMonitoredResource(MonitoredResource resource, bool create = true)
-        {
-            MonitoredResource realResource = _monitoredResources.FirstOrDefault(x => string.Compare(x.Id, resource.Id, true) == 0
-                & x.InstanceId == resource.InstanceId
-                & string.Compare(x.Name, resource.Name, true) == 0
-                & string.Compare(x.Type, resource.Type, true) == 0);
-
-            if (create && realResource == null)
-            {
-                AddOrUpdateResource(resource);
-                return GetMonitoredResource(resource, false);
-            }
-
-            return realResource;
+            return;
         }
 
         private List<MonitoredResource> GetCurrentResources()
@@ -584,14 +501,38 @@ namespace afVmPowerMonitor
             return mResources;
         }
 
+        private string GetGraphAccessToken()
+        {
+            string authContextURL = "https://login.microsoftonline.com/" + _tenantId + "/oauth2";
+            //string authContextURL = "https://login.windows.net/" + _tenantId;
+            AuthenticationContext authenticationContext = new AuthenticationContext(authContextURL);
+            ClientCredential credential = new ClientCredential(clientId: _clientId, clientSecret: _secret);
+            AuthenticationResult graphResult = authenticationContext.AcquireTokenAsync(resource: "https://graph.microsoft.com/", clientCredential: credential).Result;
+
+            _graphToken = graphResult.AccessToken;
+            _log.LogInformation($"graph token:{_graphToken}");
+            return _graphToken;
+        }
+
+        private MonitoredResource GetMonitoredResource(MonitoredResource resource, bool create = true)
+        {
+            MonitoredResource realResource = _monitoredResources.FirstOrDefault(x => string.Compare(x.Id, resource.Id, true) == 0
+                & x.InstanceId == resource.InstanceId
+                & string.Compare(x.Name, resource.Name, true) == 0
+                & string.Compare(x.Type, resource.Type, true) == 0);
+
+            if (create && realResource == null)
+            {
+                AddOrUpdateResource(resource);
+                return GetMonitoredResource(resource, false);
+            }
+
+            return realResource;
+        }
+
         private CloudBlockBlob GetStorageBlobReference(string file, string containerName, bool create = false)
         {
             //gpv2 static web site
-            //https://jagilbergpv2website.z13.web.core.windows.net/
-            //https://sfkustofunc8a91.file.core.windows.net/sfkustofunc8a91/site/wwwroot/host.json
-            //https://jagilbergpv2website.blob.core.windows.net/$web/running.json
-            //text = $"{{\r\n\"lastRun\": \"{DateTime.Now}\",\r\n\"list\": {text}\r\n}}";
-
             CloudStorageAccount storageAccount = CloudStorageAccount.Parse(_webJobsStorage);
             CloudBlobClient blobClient = storageAccount.CreateCloudBlobClient();
             CloudBlobContainer container = blobClient.GetContainerReference(containerName);
@@ -670,12 +611,12 @@ namespace afVmPowerMonitor
                         break;
                     }
                 }
-
             }
 
             _log.LogInformation($"vmss vm results count: {vmssVmResults.Count}");
             return vmssVmResults;
         }
+
         private MonitoredResourcesResult LoadResultsFromJson(string file, bool clean = true)
         {
             MonitoredResourcesResult result = new MonitoredResourcesResult();
@@ -738,28 +679,9 @@ namespace afVmPowerMonitor
                 _log.LogInformation("Error setting up stream writer: " + ex.Message);
             }
 
-            // Get the response
-            HttpWebResponse response = null;
-            try
-            {
-                response = (HttpWebResponse)request.GetResponse();
-                _log.LogInformation($"POST: response:{JsonConvert.SerializeObject(response, Formatting.Indented)}");
-            }
-            catch (Exception ex)
-            {
-                _log.LogInformation("Error from : " + uri + ": " + ex.Message);
-                return null;
-            }
-
-            string result = null;
-            using (StreamReader streamReader = new StreamReader(response.GetResponseStream()))
-            {
-                result = streamReader.ReadToEnd();
-                _log.LogInformation($"POST: result:{JsonConvert.SerializeObject(result, Formatting.Indented)}");
-            }
-
-            return result;
+            return GetResponse(request);
         }
+
         private void SaveResultsToJson(string file, MonitoredResourcesResult monitoredResourcesResult, bool clean = true)
         {
             string text = JsonConvert.SerializeObject(monitoredResourcesResult, Formatting.Indented);
@@ -784,7 +706,6 @@ namespace afVmPowerMonitor
                 // Set the content type
                 blockBlob.FetchAttributesAsync().Wait();
                 blockBlob.Properties.ContentType = "application/json";
-
                 blockBlob.SetPropertiesAsync().Wait();
             }
             else
@@ -879,7 +800,6 @@ namespace afVmPowerMonitor
                 {
                     UpdateResourcePoweredOff(resource);
                 }
-
             }
         }
 
