@@ -42,3 +42,5 @@ iwr "https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-r
 </p>
 
 ![portal template settings](/afVmPowerMonitor/images/portal-template-settings.1.png)
+
+![portal flow](/afVmPowerMonitor/images/portal-flow.1.png)
