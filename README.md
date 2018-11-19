@@ -13,6 +13,7 @@ afVmPowerMonitor is an azure function to monitor virtual machine and kusto power
   * application client id and secret are an azure AD application and service principal name which is required for any application authenticating to azure in a non-interactive environment. there are multiple ways to create azure id and secret. one way is to copy the command below into admin powershell prompt and execute to create client id and secret. this will generate a self signed certificate on the local machine from where it is run. the certificate thumbprint will be used when creating the azure spn.
   * if needed, use the following command to generate a new client id and secret, save output, and use values when deploying template.
   * or, [use these steps to create in portal.](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal)
+  * or, [apps.dev.microsoft.com](https://apps.dev.microsoft.com)
 ```powershell
 iwr "https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-rm-create-aad-application-spn.ps1"| iex
 ```  
@@ -38,7 +39,6 @@ iwr "https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-r
 <a href="http://armviz.io/#/?load=https%3A%2F%2Fraw.githubusercontent.com%2Fjagilber%2FafVmPowerMonitor%2Fmaster%2Fazuredeploy.json" target="_blank">
     <img src="http://armviz.io/visualizebutton.png"/>
 </a>
-
-
+</p>
 
 ![portal template settings](/afVmPowerMonitor/images/portal-template-settings.1.png)
