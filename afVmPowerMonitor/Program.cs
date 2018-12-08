@@ -1,4 +1,9 @@
-﻿using Microsoft.Azure.Management.Compute;
+﻿// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+// ------------------------------------------------------------
+
+using Microsoft.Azure.Management.Compute;
 using Microsoft.Azure.Management.ResourceManager;
 using Microsoft.Azure.Management.ResourceManager.Models;
 using Microsoft.Extensions.Logging;
@@ -181,6 +186,12 @@ namespace afVmPowerMonitor
 
         private bool CheckKustoPowerStates()
         {
+            if (string.IsNullOrEmpty(_kustoApiVersion))
+            {
+                _log.LogWarning($"kustoapiversion not provided. *not* checking for running kusto instances");
+                return false;
+            }
+
             bool retval = false;
             List<KustoClusterResults> allResults = new List<KustoClusterResults>();
             List<MonitoredResource> kustoRunningResults = new List<MonitoredResource>();
@@ -280,6 +291,12 @@ namespace afVmPowerMonitor
 
         private bool CheckVmPowerStates()
         {
+            if (string.IsNullOrEmpty(_virtualMachineApiVersion))
+            {
+                _log.LogWarning($"virtualmachineapiversion not provided. *not* checking for running vm instances");
+                return false;
+            }
+
             //GET https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Compute/virtualMachines?api-version=2017-12-01
             //GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}/instanceView?api-version=2017-12-01
             bool retval = false;
@@ -357,6 +374,12 @@ namespace afVmPowerMonitor
 
         private bool CheckVmssPowerStates()
         {
+            if (string.IsNullOrEmpty(_virtualMachineApiVersion))
+            {
+                _log.LogWarning($"virtualmachineapiversion not provided. *not* checking for running vmss instances");
+                return false;
+            }
+
             bool retval = false;
             List<VmssResults> allResults = GetVirtualMachineScaleSets();
             List<VMResults> vmssVmResults = GetVmssVmResults(allResults);
@@ -682,17 +705,9 @@ namespace afVmPowerMonitor
             return GetResponse(request);
         }
 
-        private void SaveResultsToJson(string file, MonitoredResourcesResult monitoredResourcesResult, bool clean = true)
+        private void SaveResultsToJson(string file, MonitoredResourcesResult monitoredResourcesResult)
         {
-            string text = JsonConvert.SerializeObject(monitoredResourcesResult, Formatting.Indented);
-
-            if (clean)
-            {
-                text = text.Replace(_subscriptionId, "<subscription Id>");
-                text = text.Replace(_tenantId, "<tenant Id>");
-                text = Regex.Replace(text, "[0-9A-F-a-f]{8}-[0-9A-F-a-f]{4}-[0-9A-F-a-f]{4}-[0-9A-F-a-f]{4}-[0-9A-F-a-f]{12}", "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx");
-            }
-
+            string text = ScrubResults(JsonConvert.SerializeObject(monitoredResourcesResult, Formatting.Indented));
             SaveResultsToJson(file, text);
         }
 
@@ -714,12 +729,20 @@ namespace afVmPowerMonitor
             }
         }
 
+        private string ScrubResults(string text)
+        {
+            text = text.Replace(_subscriptionId, "<subscription Id>");
+            text = text.Replace(_tenantId, "<tenant Id>");
+            text = Regex.Replace(text, "[0-9A-F-a-f]{8}-[0-9A-F-a-f]{4}-[0-9A-F-a-f]{4}-[0-9A-F-a-f]{4}-[0-9A-F-a-f]{12}", "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx");
+            return text;
+        }
+
         private void SendGraphEmail()
         {
             // ms internal employees do not have authorization to setup application or delegated user access read or send mail rights in graph
             throw new NotImplementedException();
             /*
-            //string graphSendMailUri = "https://graph.microsoft.com/v1.0/me/sendMail";
+            //string graphSendMailUri = "https://graph.microsoft.com/v1.0/me/sendMail";A
             string graphSendMailUri = "https://graph.microsoft.com/v1.0/users/bd6e11b9-xxxxxxxxxxxxxxxx/sendMail";
 
             //string graphSendMailUri = "https://graph.microsoft.com/v1.0/jagilber/sendMail";
@@ -759,6 +782,7 @@ namespace afVmPowerMonitor
                 return false;
             }
 
+            message = ScrubResults(message);
             SendGridClient client = new SendGridClient(_sendGridApiKey);
             EmailAddress from = new EmailAddress(_fromEmail, null);
             List<EmailAddress> tos = new List<EmailAddress>();
