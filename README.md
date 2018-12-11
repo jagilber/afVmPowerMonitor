@@ -18,9 +18,10 @@ afVmPowerMonitor is an azure function to monitor virtual machine and kusto power
 iwr "https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-rm-create-aad-application-spn.ps1"| iex
 ```  
 #### optional
-- sendgrid api key for email notifications  
+- sendgrid api key for email notifications  .
   NOTE: sendgrid account is free for 100 emails / day  
   [sendgrid signup](https://signup.sendgrid.com/)
+- to disable checks for virtual machines, virtual machine scale sets, and / or kusto, remove the corresponding api version string form the configuration.
 
 #### optional post deployment
 - enable static website for use in browser or querying json from powershell for example.

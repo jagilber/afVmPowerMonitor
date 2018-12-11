@@ -21,22 +21,22 @@
       "FunctionJsonStorageContainer": {
           "value": "$web"
       },
-      "functionName": {
+      "FunctionName": {
           "value": "vmPowerMonitor"
       },
       "SendgridApiKey": {
           "value": ""
       },
-      "storageAccountKind": {
+      "StorageAccountKind": {
           "value": "StorageV2"
       },
-      "storageAccountNamePrefix": {
+      "StorageAccountNamePrefix": {
           "value": "gpv2afweb"
       },
-      "storageAccountType": {
+      "StorageAccountType": {
           "value": "Standard_LRS"
       },
-      "supportsHttpsTrafficOnly": {
+      "SupportsHttpsTrafficOnly": {
           "value": true
       },
       "ToEmail": {
@@ -44,6 +44,15 @@
       },
       "ScheduleAppSettings":{
           "value":"0 0 */4 * * *"
+      },
+      "VirtualMachineApiVersion":{
+          "value":"2017-12-01"
+      },
+      "VirtualMachineScaleSetApiVersion":{
+          "value":"2017-12-01"
+      },
+      "KustoApiVersion":{
+          "value":"2018-09-07-preview"
       }
   },
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",

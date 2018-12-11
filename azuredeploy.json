@@ -1,28 +1,28 @@
 {
   "parameters": {
-    "functionName": {
+    "FunctionName": {
       "type": "string",
       "defaultValue": "vmPowerMonitor"
     },
-    "storageAccountNamePrefix": {
+    "StorageAccountNamePrefix": {
       "type": "string",
       "defaultValue": "gpv2afweb",
       "metadata": {
-        "description": "storage account name must be unique."
+        "description": "Storage account name must be unique."
       }
     },
-    "storageAccountType": {
+    "StorageAccountType": {
       "type": "string",
       "defaultValue": "Standard_LRS"
     },
-    "storageAccountKind": {
+    "StorageAccountKind": {
       "type": "string",
       "defaultValue": "StorageV2",
       "metadata": {
-        "description": "storage account kind must be v2 for static web site."
+        "description": "Storage account kind must be v2 for static web site."
       }
     },
-    "supportsHttpsTrafficOnly": {
+    "SupportsHttpsTrafficOnly": {
       "type": "bool",
       "defaultValue": true
     },
@@ -95,18 +95,37 @@
       "metadata": {
         "description": "to email address used for sending emails"
       }
+    },
+    "VirtualMachineApiVersion": {
+      "type": "string",
+      "defaultValue": "2017-12-01",
+      "metadata":{
+        "description": "virtual machine ARM api version. Remove to disable vm power check."
+      }
+    },
+    "VirtualMachineScaleSetApiVersion": {
+      "type": "string",
+      "defaultValue": "2017-12-01",
+      "metadata":{
+        "description": "virtual machine scale set ARM api version. Remove to disable vmss power check."
+      }
+    },
+    "KustoApiVersion": {
+      "type": "string",
+      "defaultValue": "2018-09-07-preview",
+      "metadata":{
+        "description": "kusto ARM api version. Remove to disable kusto db power check."
+      }
     }
   },
   "variables": {
     "apiVersion": "2016-09-01",
-    "kustoApiVersion": "2018-09-07-preview",
     "sourceCodeBranch": "master",
     "sourceCodeManualIntegration": true,
     "sourceCodeRepositoryURL": "https://github.com/jagilber/afVmPowerMonitor.git",
-    "storageAccountName": "[take( toLower( concat( parameters('storageAccountNamePrefix'), uniqueString(resourceGroup().id) ) ),24)]",
+    "storageAccountName": "[take( toLower( concat( parameters('StorageAccountNamePrefix'), uniqueString(resourceGroup().id) ) ),24)]",
     "storageAccountid": "[concat(resourceGroup().id,'/providers/','Microsoft.Storage/storageAccounts/', variables('storageAccountName'))]",
-    "virtualMachineApiVersion": "2017-12-01",
-    "webSiteName": "[take( toLower( concat( parameters('functionName'), uniqueString(resourceGroup().id) ) ),24)]"
+    "webSiteName": "[take( toLower( concat( parameters('FunctionName'), uniqueString(resourceGroup().id) ) ),24)]"
   },
   "resources": [
     {
@@ -114,7 +133,7 @@
       "type": "Microsoft.Web/sites",
       "dependsOn": [
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName'))]",
-        "[resourceId('microsoft.insights/components/', parameters('functionName'))]"
+        "[resourceId('microsoft.insights/components/', parameters('FunctionName'))]"
       ],
       "properties": {
         "siteConfig": {
@@ -137,7 +156,7 @@
             },
             {
               "name": "APPINSIGHTS_INSTRUMENTATIONKEY",
-              "value": "[reference(resourceId('microsoft.insights/components/', parameters('functionName')), '2015-05-01').InstrumentationKey]"
+              "value": "[reference(resourceId('microsoft.insights/components/', parameters('FunctionName')), '2015-05-01').InstrumentationKey]"
             },
             {
               "name": "Project",
@@ -170,8 +189,9 @@
             "AzureSecret": "[parameters('AzureSecret')]",
             "AzureSubscriptionId": "[subscription().subscriptionId]",
             "FunctionJsonStorageContainer": "[parameters('FunctionJsonStorageContainer')]",
-            "KustoApiVersion": "[variables('kustoApiVersion')]",
-            "VirtualMachineApiVersion": "[variables('virtualMachineApiVersion')]",
+            "KustoApiVersion": "[parameters('KustoApiVersion')]",
+            "VirtualMachineApiVersion": "[parameters('VirtualMachineApiVersion')]",
+            "VirtualMachineScaleSetApiVersion": "[parameters('VirtualMachineScaleSetApiVersion')]",
             "ApiVersion": "[variables('apiVersion')]",
             "ConsecutivePoweredOnEmailCount": "[parameters('ConsecutivePoweredOnEmailCount')]",
             "ConsecutivePoweredOnActionCount": "[parameters('ConsecutivePoweredOnActionCount')]",
@@ -181,7 +201,7 @@
             "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1)]",
             "WEBSITE_CONTENTSHARE": "[concat(toLower(variables('webSiteName')), 'share')]",
             "WEBSITE_NODE_DEFAULT_VERSION": "8.11.1",
-            "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('microsoft.insights/components/', parameters('functionName')), '2015-05-01').InstrumentationKey]"
+            "APPINSIGHTS_INSTRUMENTATIONKEY": "[reference(resourceId('microsoft.insights/components/', parameters('FunctionName')), '2015-05-01').InstrumentationKey]"
           }
         },
         {
@@ -209,24 +229,24 @@
       "apiVersion": "2018-07-01",
       "location": "[resourcegroup().location]",
       "properties": {
-        "supportsHttpsTrafficOnly": "[parameters('supportsHttpsTrafficOnly')]"
+        "SupportsHttpsTrafficOnly": "[parameters('SupportsHttpsTrafficOnly')]"
       },
       "dependsOn": [],
       "sku": {
-        "name": "[parameters('storageAccountType')]"
+        "name": "[parameters('StorageAccountType')]"
       },
-      "kind": "[parameters('storageAccountKind')]"
+      "kind": "[parameters('StorageAccountKind')]"
     },
     {
       "apiVersion": "2015-05-01",
-      "name": "[parameters('functionName')]",
+      "name": "[parameters('FunctionName')]",
       "type": "microsoft.insights/components",
       "location": "[resourcegroup().location]",
       "tags": {
-        "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', parameters('functionName'))]": "Resource"
+        "[concat('hidden-link:', resourceGroup().id, '/providers/Microsoft.Web/sites/', parameters('FunctionName'))]": "Resource"
       },
       "properties": {
-        "ApplicationId": "[parameters('functionName')]",
+        "ApplicationId": "[parameters('FunctionName')]",
         "Request_Source": "IbizaWebAppExtensionCreate"
       }
     }
@@ -236,9 +256,9 @@
       "type": "string",
       "value": "[variables('webSiteName')]"
     },
-    "storageAccountName": {
+    "StorageAccountName": {
       "type": "string",
-      "value": "[variables('storageAccountName')]"
+      "value": "[variables('StorageAccountName')]"
     }
   },
   "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
