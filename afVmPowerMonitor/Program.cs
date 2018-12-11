@@ -49,6 +49,7 @@ namespace afVmPowerMonitor
         private string _toEmail;
         private string _token;
         private string _virtualMachineApiVersion;
+        private string _virtualMachineScaleSetApiVersion;
         private string _webJobsStorage;
 
         public Program(ILogger log)
@@ -63,6 +64,7 @@ namespace afVmPowerMonitor
             _kustoApiVersion = Environment.GetEnvironmentVariable("KustoApiVersion");
             _apiVersion = Environment.GetEnvironmentVariable("ApiVersion");
             _virtualMachineApiVersion = Environment.GetEnvironmentVariable("VirtualMachineApiVersion");
+            _virtualMachineScaleSetApiVersion = Environment.GetEnvironmentVariable("VirtualMachineScaleSetApiVersion");
             _fromEmail = Environment.GetEnvironmentVariable("FromEmail");
             _toEmail = Environment.GetEnvironmentVariable("ToEmail");
             _message = Environment.GetEnvironmentVariable("message");
@@ -374,7 +376,7 @@ namespace afVmPowerMonitor
 
         private bool CheckVmssPowerStates()
         {
-            if (string.IsNullOrEmpty(_virtualMachineApiVersion))
+            if (string.IsNullOrEmpty(_virtualMachineScaleSetApiVersion))
             {
                 _log.LogWarning($"virtualmachineapiversion not provided. *not* checking for running vmss instances");
                 return false;
@@ -388,7 +390,7 @@ namespace afVmPowerMonitor
             foreach (VMResults result in vmssVmResults)
             {
                 //GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/instanceView?api-version=2017-12-01
-                Uri instanceUri = new Uri($"{_baseUri}{result.id}/instanceView?api-version={_virtualMachineApiVersion}");
+                Uri instanceUri = new Uri($"{_baseUri}{result.id}/instanceView?api-version={_virtualMachineScaleSetApiVersion}");
                 string instanceResponse = GET(instanceUri.ToString());
                 VmssVMInstanceResults vmInstance = JsonConvert.DeserializeObject<VmssVMInstanceResults>(instanceResponse);
                 vmInstance.id = instanceUri.AbsolutePath;
@@ -415,7 +417,7 @@ namespace afVmPowerMonitor
                     {
                         // send post to turn off vm
                         // POST https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/deallocate?api-version=2017-12-01
-                        string aresult = POST($"{_baseUri}{result.id}/deallocate", null, _virtualMachineApiVersion);
+                        string aresult = POST($"{_baseUri}{result.id}/deallocate", null, _virtualMachineScaleSetApiVersion);
                     }
                 }
                 else
@@ -580,7 +582,7 @@ namespace afVmPowerMonitor
         {
             List<VmssResults> allResults = new List<VmssResults>();
 
-            string response = GET("providers/Microsoft.Compute/virtualMachineScaleSets", null, _virtualMachineApiVersion);
+            string response = GET("providers/Microsoft.Compute/virtualMachineScaleSets", null, _virtualMachineScaleSetApiVersion);
 
             if (string.IsNullOrEmpty(response))
             {
@@ -613,7 +615,7 @@ namespace afVmPowerMonitor
             foreach (VmssResults result in allResults)
             {
                 //GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{virtualMachineScaleSetName}/virtualMachines?api-version=2017-12-01
-                string response = GET($"{_baseUri}{result.id}/VirtualMachines?api-version={_virtualMachineApiVersion}");
+                string response = GET($"{_baseUri}{result.id}/VirtualMachines?api-version={_virtualMachineScaleSetApiVersion}");
 
                 if (string.IsNullOrEmpty(response))
                 {
