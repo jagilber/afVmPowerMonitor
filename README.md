@@ -21,7 +21,7 @@ iwr "https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-r
 - sendgrid api key for email notifications  .
   NOTE: sendgrid account is free for 100 emails / day  
   [sendgrid signup](https://signup.sendgrid.com/)
-- to disable checks for virtual machines, virtual machine scale sets, and / or kusto, remove the corresponding api version string form the configuration.
+- to disable checks for virtual machines, virtual machine scale sets, and / or kusto, remove the corresponding api version string from the configuration.
 
 #### optional post deployment
 - enable static website for use in browser or querying json from powershell for example.
