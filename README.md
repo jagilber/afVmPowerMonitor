@@ -11,9 +11,10 @@ afVmPowerMonitor is an azure function to monitor virtual machine and kusto power
 #### required
 - an existing or new azure application client id and secret for function authentication  
   * application client id and secret are an azure AD application and service principal name which is required for any application authenticating to azure in a non-interactive environment. there are multiple ways to create azure id and secret. one way is to copy the command below into admin powershell prompt and execute to create client id and secret. this will generate a self signed certificate on the local machine from where it is run. the certificate thumbprint will be used when creating the azure spn.
-  * if needed, use the following command to generate a new client id and secret, save output, and use values when deploying template.
-  * or, [use these steps to create in portal.](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal)
-  * or, [apps.dev.microsoft.com](https://apps.dev.microsoft.com)
+  * if needed, use one of the following options to generate a new client id and secret, save output, and use values when deploying template:
+    * [create in portal.](https://docs.microsoft.com/en-us/azure/active-directory/develop/howto-create-service-principal-portal)
+    * [create in apps.dev.microsoft.com](https://apps.dev.microsoft.com)
+    * use powershell script:
 ```powershell
 iwr "https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-rm-create-aad-application-spn.ps1"| iex
 ```  
@@ -21,7 +22,7 @@ iwr "https://raw.githubusercontent.com/jagilber/powershellScripts/master/azure-r
 - sendgrid api key for email notifications  .
   NOTE: sendgrid account is free for 100 emails / day  
   [sendgrid signup](https://signup.sendgrid.com/)
-- to disable checks for virtual machines, virtual machine scale sets, and / or kusto, remove the corresponding api version string from the configuration.
+- to disable checks for virtual machines, virtual machine scale sets, and / or kusto, remove the corresponding include filters '.' from configuration during deploy or afterwards in application settings.
 
 #### optional post deployment
 - enable static website for use in browser or querying json from powershell for example.
