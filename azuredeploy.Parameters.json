@@ -45,14 +45,23 @@
       "ScheduleAppSettings":{
           "value":"0 0 */4 * * *"
       },
-      "VirtualMachineApiVersion":{
-          "value":"2017-12-01"
+      "KustoIncludeFilter":{
+          "value":"."
       },
-      "VirtualMachineScaleSetApiVersion":{
-          "value":"2017-12-01"
+      "KustoExcludeFilter":{
+          "value":""
       },
-      "KustoApiVersion":{
-          "value":"2018-09-07-preview"
+      "VmIncludeFilter":{
+          "value":"."
+      },
+      "VmExcludeFilter":{
+          "value":""
+      },
+      "VmssIncludeFilter":{
+          "value":"."
+      },
+      "VmssExcludeFilter":{
+          "value":""
       }
   },
   "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",

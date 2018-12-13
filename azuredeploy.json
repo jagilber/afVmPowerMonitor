@@ -96,25 +96,46 @@
         "description": "to email address used for sending emails"
       }
     },
-    "VirtualMachineApiVersion": {
+    "KustoIncludeFilter": {
       "type": "string",
-      "defaultValue": "2017-12-01",
-      "metadata":{
-        "description": "virtual machine ARM api version. Remove to disable vm power check."
+      "defaultValue": ".",
+      "metadata": {
+        "description": "regex pattern for kusto resources to be included in power management. '.' is include everything, empty '' is exclude all / disable."
       }
     },
-    "VirtualMachineScaleSetApiVersion": {
+    "KustoExcludeFilter": {
       "type": "string",
-      "defaultValue": "2017-12-01",
-      "metadata":{
-        "description": "virtual machine scale set ARM api version. Remove to disable vmss power check."
+      "defaultValue": "",
+      "metadata": {
+        "description": "regex pattern for kusto resources to be excluded in power management. '.' is exclude everything, empty '' is include all."
       }
     },
-    "KustoApiVersion": {
+    "VmIncludeFilter": {
       "type": "string",
-      "defaultValue": "2018-09-07-preview",
-      "metadata":{
-        "description": "kusto ARM api version. Remove to disable kusto db power check."
+      "defaultValue": ".",
+      "metadata": {
+        "description": "regex pattern for vm resources to be included in power management. '.' is include everything, empty '' is exclude all / disable."
+      }
+    },
+    "VmExcludeFilter": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "regex pattern for vm resources to be excluded in power management. '.' is exclude everything, empty '' is include all."
+      }
+    },
+    "VmssIncludeFilter": {
+      "type": "string",
+      "defaultValue": ".",
+      "metadata": {
+        "description": "regex pattern for vmss resources to be included in power management. '.' is include everything, empty '' is exclude all / disable."
+      }
+    },
+    "VmssExcludeFilter": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "regex pattern for vmss resources to be excluded in power management. '.' is exclude everything, empty '' is include all."
       }
     }
   },
@@ -189,14 +210,17 @@
             "AzureSecret": "[parameters('AzureSecret')]",
             "AzureSubscriptionId": "[subscription().subscriptionId]",
             "FunctionJsonStorageContainer": "[parameters('FunctionJsonStorageContainer')]",
-            "KustoApiVersion": "[parameters('KustoApiVersion')]",
-            "VirtualMachineApiVersion": "[parameters('VirtualMachineApiVersion')]",
-            "VirtualMachineScaleSetApiVersion": "[parameters('VirtualMachineScaleSetApiVersion')]",
             "ApiVersion": "[variables('apiVersion')]",
             "ConsecutivePoweredOnEmailCount": "[parameters('ConsecutivePoweredOnEmailCount')]",
             "ConsecutivePoweredOnActionCount": "[parameters('ConsecutivePoweredOnActionCount')]",
             "FromEmail": "[parameters('FromEmail')]",
             "ToEmail": "[parameters('ToEmail')]",
+            "KustoIncludeFilter": "[parameters('KustoIncludeFilter')]",
+            "KustoExcludeFilter": "[parameters('KustoExcludeFilter')]",
+            "VmIncludeFilter": "[parameters('VmIncludeFilter')]",
+            "VmExcludeFilter": "[parameters('VmExcludeFilter')]",
+            "VmssIncludeFilter": "[parameters('VmssIncludeFilter')]",
+            "VmssExcludeFilter": "[parameters('VmssExcludeFilter')]",
             "FUNCTIONS_EXTENSION_VERSION": "~2",
             "WEBSITE_CONTENTAZUREFILECONNECTIONSTRING": "[concat('DefaultEndpointsProtocol=https;AccountName=',variables('storageAccountName'),';AccountKey=',listKeys(resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountName')), '2015-05-01-preview').key1)]",
             "WEBSITE_CONTENTSHARE": "[concat(toLower(variables('webSiteName')), 'share')]",
