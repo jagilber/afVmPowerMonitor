@@ -68,8 +68,7 @@ namespace afVmPowerMonitor
             _subscriptionId = Environment.GetEnvironmentVariable("AzureSubscriptionId");
             _fromEmail = Environment.GetEnvironmentVariable("FromEmail");
             _toEmail = Environment.GetEnvironmentVariable("ToEmail");
-            _message = Environment.GetEnvironmentVariable("message");
-            _sendGridApiKey = Environment.GetEnvironmentVariable("sendGridApiKey");
+            _sendGridApiKey = Environment.GetEnvironmentVariable("SendgridApiKey");
             _consecutivePoweredOnEmailCount = Convert.ToInt32(Environment.GetEnvironmentVariable("ConsecutivePoweredOnEmailCount"));
             _consecutivePoweredOnActionCount = Convert.ToInt32(Environment.GetEnvironmentVariable("ConsecutivePoweredOnActionCount"));
             _webJobsStorage = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
@@ -360,24 +359,6 @@ namespace afVmPowerMonitor
             return retval;
         }
 
-        private bool IncludeResource(MonitoredResource r, string includeFilter, string excludeFilter)
-        {
-            bool include = false;
-
-            if (!string.IsNullOrEmpty(includeFilter) && Regex.IsMatch(r.Name, includeFilter, RegexOptions.IgnoreCase))
-            {
-                include = true;
-            }
-
-            if (!string.IsNullOrEmpty(excludeFilter) && !Regex.IsMatch(r.Name, excludeFilter, RegexOptions.IgnoreCase))
-            {
-                include = false;
-            }
-
-            _log.LogInformation($"IncludeResource:{r.Name} include?:{include}");
-            return include;
-        }
-
         private bool CheckVmssPowerStates()
         {
             bool retval = false;
@@ -641,6 +622,24 @@ namespace afVmPowerMonitor
 
             _log.LogInformation($"vmss vm results count: {vmssVmResults.Count}");
             return vmssVmResults;
+        }
+
+        private bool IncludeResource(MonitoredResource r, string includeFilter, string excludeFilter)
+        {
+            bool include = false;
+
+            if (!string.IsNullOrEmpty(includeFilter) && Regex.IsMatch(r.Name, includeFilter, RegexOptions.IgnoreCase))
+            {
+                include = true;
+            }
+
+            if (!string.IsNullOrEmpty(excludeFilter) && !Regex.IsMatch(r.Name, excludeFilter, RegexOptions.IgnoreCase))
+            {
+                include = false;
+            }
+
+            _log.LogInformation($"IncludeResource:{r.Name} include?:{include}");
+            return include;
         }
 
         private MonitoredResourcesResult LoadResultsFromJson(string file, bool clean = true)
