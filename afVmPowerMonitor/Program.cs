@@ -28,7 +28,7 @@ namespace afVmPowerMonitor
     internal class Program
     {
         private static ILogger _log;
-        private string _apiVersion;
+        private string _apiVersion = "2016-09-01";
         private string _baseUri = "https://management.azure.com";
         private string _clientId;
         private int _consecutivePoweredOnActionCount;
@@ -37,7 +37,9 @@ namespace afVmPowerMonitor
         private string _fromEmail;
         private string _functionJsonStorageContainer;
         private string _graphToken;
-        private string _kustoApiVersion;
+        private string _kustoApiVersion = "2018-09-07-preview";
+        private string _kustoExcludeFilter;
+        private string _kustoIncludeFilter;
         private string _message;
         private List<MonitoredResource> _monitoredResources = new List<MonitoredResource>();
         private StringBuilder _msgBuilder = new StringBuilder();
@@ -48,8 +50,11 @@ namespace afVmPowerMonitor
         private string _tenantId;
         private string _toEmail;
         private string _token;
-        private string _virtualMachineApiVersion;
-        private string _virtualMachineScaleSetApiVersion;
+        private string _virtualMachineApiVersion = "2017-12-01";
+        private string _vmExcludeFilter;
+        private string _vmIncludeFilter;
+        private string _vmssExcludeFilter;
+        private string _vmssIncludeFilter;
         private string _webJobsStorage;
 
         public Program(ILogger log)
@@ -61,10 +66,6 @@ namespace afVmPowerMonitor
             _clientId = Environment.GetEnvironmentVariable("AzureClientId");
             _secret = Environment.GetEnvironmentVariable("AzureSecret");
             _subscriptionId = Environment.GetEnvironmentVariable("AzureSubscriptionId");
-            _kustoApiVersion = Environment.GetEnvironmentVariable("KustoApiVersion");
-            _apiVersion = Environment.GetEnvironmentVariable("ApiVersion");
-            _virtualMachineApiVersion = Environment.GetEnvironmentVariable("VirtualMachineApiVersion");
-            _virtualMachineScaleSetApiVersion = Environment.GetEnvironmentVariable("VirtualMachineScaleSetApiVersion");
             _fromEmail = Environment.GetEnvironmentVariable("FromEmail");
             _toEmail = Environment.GetEnvironmentVariable("ToEmail");
             _message = Environment.GetEnvironmentVariable("message");
@@ -73,6 +74,13 @@ namespace afVmPowerMonitor
             _consecutivePoweredOnActionCount = Convert.ToInt32(Environment.GetEnvironmentVariable("ConsecutivePoweredOnActionCount"));
             _webJobsStorage = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
             _functionJsonStorageContainer = Environment.GetEnvironmentVariable("FunctionJsonStorageContainer");
+
+            _kustoIncludeFilter = Environment.GetEnvironmentVariable("KustoIncludeFilter");
+            _kustoExcludeFilter = Environment.GetEnvironmentVariable("KustoExcludeFilter");
+            _vmIncludeFilter = Environment.GetEnvironmentVariable("VmIncludeFilter");
+            _vmExcludeFilter = Environment.GetEnvironmentVariable("VmExcludeFilter");
+            _vmssIncludeFilter = Environment.GetEnvironmentVariable("VmssIncludeFilter");
+            _vmssExcludeFilter = Environment.GetEnvironmentVariable("VmssExcludeFilter");
 
             if (new List<string> { _tenantId, _clientId, _secret, _subscriptionId }.Any(i => String.IsNullOrEmpty(i)))
             {
@@ -188,46 +196,24 @@ namespace afVmPowerMonitor
 
         private bool CheckKustoPowerStates()
         {
-            if (string.IsNullOrEmpty(_kustoApiVersion))
-            {
-                _log.LogWarning($"kustoapiversion not provided. *not* checking for running kusto instances");
-                return false;
-            }
-
             bool retval = false;
             List<KustoClusterResults> allResults = new List<KustoClusterResults>();
             List<MonitoredResource> kustoRunningResults = new List<MonitoredResource>();
             List<string> kustoClusterIds = new List<string>();
 
-            GetCurrentResources()
-                .Where(x => x.Id.Contains("Microsoft.Kusto"))
-                .Where(x => !x.Id.Contains("databases"))
-                .ToList()
-                .ForEach(res =>
-                {
-                    _log.LogInformation(string.Format("Kusto cluster \tName: {0}, Id: {1}", res.Name, res.Id));
-                    kustoClusterIds.Add(res.Id);
-                });
-
-            foreach (string cluster in kustoClusterIds)
-            {
-                GenericResource clusterResource = _resourceClient.Resources.GetById(cluster, _kustoApiVersion);
-                _log.LogInformation(JsonConvert.SerializeObject(clusterResource, Formatting.Indented));
-            }
-
             string response = GET("providers/Microsoft.Kusto/clusters", null, _kustoApiVersion);
-
-            if (string.IsNullOrEmpty(response))
-            {
-                _log.LogError("CheckKustoPowerStates:ERROR:null response");
-                return false;
-            }
-
-            KustoClusterResults[] clusterResults = JsonConvert.DeserializeObject<KustoClusterResults[]>(JObject.Parse(response)["value"].ToString());
-            _log.LogInformation($"{JsonConvert.SerializeObject(clusterResults, Formatting.Indented)}");
 
             while (true)
             {
+                if (string.IsNullOrEmpty(response))
+                {
+                    _log.LogError("CheckKustoPowerStates:ERROR:null response");
+                    return false;
+                }
+
+                KustoClusterResults[] clusterResults = JsonConvert.DeserializeObject<KustoClusterResults[]>(JObject.Parse(response)["value"].ToString());
+                _log.LogInformation($"{JsonConvert.SerializeObject(clusterResults, Formatting.Indented)}");
+
                 allResults.AddRange(clusterResults);
 
                 if (Regex.IsMatch(response, "nextLink"))
@@ -249,17 +235,20 @@ namespace afVmPowerMonitor
 
                 if (!result.properties.state.Contains("Stopped"))
                 {
-                    MonitoredResource resource = UpdateResourcePoweredOn(mresource);
+                    MonitoredResource r = UpdateResourcePoweredOn(mresource);
 
-                    if (resource.SendEmail)
+                    if (IncludeResource(r, _kustoIncludeFilter, _kustoExcludeFilter))
                     {
-                        kustoRunningResults.Add(resource);
-                    }
+                        if (r.SendEmail)
+                        {
+                            kustoRunningResults.Add(r);
+                        }
 
-                    if (resource.ExecuteAction)
-                    {
-                        // send post to turn off cluster
-                        string aresult = POST($"{_baseUri}{resource.Id}/stop", null, _kustoApiVersion);
+                        if (r.ExecuteAction)
+                        {
+                            // send post to turn off cluster
+                            string aresult = POST($"{_baseUri}{r.Id}/stop", null, _kustoApiVersion);
+                        }
                     }
 
                     _log.LogWarning($"running kusto cluster {result}");
@@ -293,12 +282,6 @@ namespace afVmPowerMonitor
 
         private bool CheckVmPowerStates()
         {
-            if (string.IsNullOrEmpty(_virtualMachineApiVersion))
-            {
-                _log.LogWarning($"virtualmachineapiversion not provided. *not* checking for running vm instances");
-                return false;
-            }
-
             //GET https://management.azure.com/subscriptions/{subscriptionId}/providers/Microsoft.Compute/virtualMachines?api-version=2017-12-01
             //GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachines/{vmName}/instanceView?api-version=2017-12-01
             bool retval = false;
@@ -307,14 +290,14 @@ namespace afVmPowerMonitor
 
             string response = GET("providers/Microsoft.Compute/virtualMachines", null, _virtualMachineApiVersion);
 
-            if (string.IsNullOrEmpty(response))
-            {
-                _log.LogError("CheckVmPowerStates:ERROR:null response");
-                return false;
-            }
-
             while (true)
             {
+                if (string.IsNullOrEmpty(response))
+                {
+                    _log.LogError("CheckVmPowerStates:ERROR:null response");
+                    return false;
+                }
+
                 allResults.AddRange(JsonConvert.DeserializeObject<VMResults[]>(JObject.Parse(response)["value"].ToString()));
 
                 if (Regex.IsMatch(response, "nextLink"))
@@ -339,15 +322,18 @@ namespace afVmPowerMonitor
                 {
                     MonitoredResource r = UpdateResourcePoweredOn(mresource);
 
-                    if (r.SendEmail)
+                    if (IncludeResource(r, _vmIncludeFilter, _vmExcludeFilter))
                     {
-                        vmRunningResults.Add(r);
-                    }
+                        if (r.SendEmail)
+                        {
+                            vmRunningResults.Add(r);
+                        }
 
-                    if (r.ExecuteAction)
-                    {
-                        // send post to turn off vm
-                        string aresult = POST($"{_baseUri}{result.id}/deallocate", null, _virtualMachineApiVersion);
+                        if (r.ExecuteAction)
+                        {
+                            // send post to turn off vm
+                            string aresult = POST($"{_baseUri}{result.id}/deallocate", null, _virtualMachineApiVersion);
+                        }
                     }
                 }
                 else
@@ -374,14 +360,26 @@ namespace afVmPowerMonitor
             return retval;
         }
 
-        private bool CheckVmssPowerStates()
+        private bool IncludeResource(MonitoredResource r, string includeFilter, string excludeFilter)
         {
-            if (string.IsNullOrEmpty(_virtualMachineScaleSetApiVersion))
+            bool include = false;
+
+            if (!string.IsNullOrEmpty(includeFilter) && Regex.IsMatch(r.Name, includeFilter, RegexOptions.IgnoreCase))
             {
-                _log.LogWarning($"virtualmachineapiversion not provided. *not* checking for running vmss instances");
-                return false;
+                include = true;
             }
 
+            if (!string.IsNullOrEmpty(excludeFilter) && !Regex.IsMatch(r.Name, excludeFilter, RegexOptions.IgnoreCase))
+            {
+                include = false;
+            }
+
+            _log.LogInformation($"IncludeResource:{r.Name} include?:{include}");
+            return include;
+        }
+
+        private bool CheckVmssPowerStates()
+        {
             bool retval = false;
             List<VmssResults> allResults = GetVirtualMachineScaleSets();
             List<VMResults> vmssVmResults = GetVmssVmResults(allResults);
@@ -390,7 +388,7 @@ namespace afVmPowerMonitor
             foreach (VMResults result in vmssVmResults)
             {
                 //GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/instanceView?api-version=2017-12-01
-                Uri instanceUri = new Uri($"{_baseUri}{result.id}/instanceView?api-version={_virtualMachineScaleSetApiVersion}");
+                Uri instanceUri = new Uri($"{_baseUri}{result.id}/instanceView?api-version={_virtualMachineApiVersion}");
                 string instanceResponse = GET(instanceUri.ToString());
                 VmssVMInstanceResults vmInstance = JsonConvert.DeserializeObject<VmssVMInstanceResults>(instanceResponse);
                 vmInstance.id = instanceUri.AbsolutePath;
@@ -408,16 +406,19 @@ namespace afVmPowerMonitor
                 {
                     MonitoredResource r = UpdateResourcePoweredOn(mresource);
 
-                    if (r.SendEmail)
+                    if (IncludeResource(r, _vmssIncludeFilter, _vmssExcludeFilter))
                     {
-                        vmssRunningResults.Add(r);
-                    }
+                        if (r.SendEmail)
+                        {
+                            vmssRunningResults.Add(r);
+                        }
 
-                    if (r.ExecuteAction)
-                    {
-                        // send post to turn off vm
-                        // POST https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/deallocate?api-version=2017-12-01
-                        string aresult = POST($"{_baseUri}{result.id}/deallocate", null, _virtualMachineScaleSetApiVersion);
+                        if (r.ExecuteAction)
+                        {
+                            // send post to turn off vm
+                            // POST https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/deallocate?api-version=2017-12-01
+                            string aresult = POST($"{_baseUri}{result.id}/deallocate", null, _virtualMachineApiVersion);
+                        }
                     }
                 }
                 else
@@ -582,7 +583,7 @@ namespace afVmPowerMonitor
         {
             List<VmssResults> allResults = new List<VmssResults>();
 
-            string response = GET("providers/Microsoft.Compute/virtualMachineScaleSets", null, _virtualMachineScaleSetApiVersion);
+            string response = GET("providers/Microsoft.Compute/virtualMachineScaleSets", null, _virtualMachineApiVersion);
 
             if (string.IsNullOrEmpty(response))
             {
@@ -615,7 +616,7 @@ namespace afVmPowerMonitor
             foreach (VmssResults result in allResults)
             {
                 //GET https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{virtualMachineScaleSetName}/virtualMachines?api-version=2017-12-01
-                string response = GET($"{_baseUri}{result.id}/VirtualMachines?api-version={_virtualMachineScaleSetApiVersion}");
+                string response = GET($"{_baseUri}{result.id}/VirtualMachines?api-version={_virtualMachineApiVersion}");
 
                 if (string.IsNullOrEmpty(response))
                 {
