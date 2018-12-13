@@ -5,7 +5,7 @@ afVmPowerMonitor is an azure function to monitor virtual machine and kusto power
 
 
 ## this template deploys the following resources:
-- .net framework azure function v2 (default free tier F1)
+- .net framework azure function v2 (default cheapest / free)
 - storage account v2
 
 ## required:
