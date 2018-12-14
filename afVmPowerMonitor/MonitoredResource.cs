@@ -1,4 +1,9 @@
-﻿using Microsoft.Azure.Management.ResourceManager.Models;
+﻿// ------------------------------------------------------------
+// Copyright (c) Microsoft Corporation.  All rights reserved.
+// Licensed under the MIT License (MIT). See License.txt in the repo root for license information.
+// ------------------------------------------------------------
+
+using Microsoft.Azure.Management.ResourceManager.Models;
 using System;
 using System.Collections.Generic;
 
@@ -26,6 +31,7 @@ namespace afVmPowerMonitor
         {
         }
 
+        public bool CurrentlyMonitored { get; set; }
         public int ConsecutivePoweredOn { get; set; }
         public bool CurrentlyPoweredOn { get; set; }
         public bool ExecuteAction { get; internal set; }

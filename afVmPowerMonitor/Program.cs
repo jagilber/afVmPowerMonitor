@@ -40,7 +40,6 @@ namespace afVmPowerMonitor
         private string _kustoApiVersion = "2018-09-07-preview";
         private string _kustoExcludeFilter;
         private string _kustoIncludeFilter;
-        private string _message;
         private List<MonitoredResource> _monitoredResources = new List<MonitoredResource>();
         private StringBuilder _msgBuilder = new StringBuilder();
         private ResourceManagementClient _resourceClient;
@@ -173,17 +172,14 @@ namespace afVmPowerMonitor
             return result;
         }
 
-        private void AddOrUpdateResource(MonitoredResource resource)
+        private void AddOrUpdateResourceList(MonitoredResource resource)
         {
             if (resource.FirstDiscovered == DateTime.MinValue)
             {
                 resource.FirstDiscovered = DateTime.Now;
             }
 
-            if (resource.TotalDiscoveries == 0)
-            {
-                resource.TotalDiscoveries++;
-            }
+            resource.TotalDiscoveries++;
 
             if (_monitoredResources.Contains(resource))
             {
@@ -530,7 +526,7 @@ namespace afVmPowerMonitor
 
             if (create && realResource == null)
             {
-                AddOrUpdateResource(resource);
+                AddOrUpdateResourceList(resource);
                 return GetMonitoredResource(resource, false);
             }
 
@@ -633,11 +629,12 @@ namespace afVmPowerMonitor
                 include = true;
             }
 
-            if (!string.IsNullOrEmpty(excludeFilter) && !Regex.IsMatch(r.Name, excludeFilter, RegexOptions.IgnoreCase))
+            if (!string.IsNullOrEmpty(excludeFilter) && Regex.IsMatch(r.Name, excludeFilter, RegexOptions.IgnoreCase))
             {
                 include = false;
             }
 
+            r.CurrentlyMonitored = include;
             _log.LogInformation($"IncludeResource:{r.Name} include?:{include}");
             return include;
         }
@@ -820,7 +817,9 @@ namespace afVmPowerMonitor
             {
                 if (currentResources.Any(x => x.Id == resource.Id & x.Name == resource.Name & x.Type == resource.Type && x.InstanceId == resource.InstanceId))
                 {
-                    GetMonitoredResource(resource).LastSeen = DateTime.Now;
+                    MonitoredResource currentResource = GetMonitoredResource(resource);
+                    currentResource.LastSeen = DateTime.Now;
+                    AddOrUpdateResourceList(currentResource);
                 }
                 else
                 {
@@ -834,12 +833,11 @@ namespace afVmPowerMonitor
             MonitoredResource r = GetMonitoredResource(resource);
             r.CurrentlyPoweredOn = false;
             r.LastSeen = DateTime.Now;
-            r.TotalDiscoveries++;
             r.ConsecutivePoweredOn = 0;
             r.SendEmail = false;
             r.ExecuteAction = false;
 
-            AddOrUpdateResource(r);
+            AddOrUpdateResourceList(r);
         }
 
         private MonitoredResource UpdateResourcePoweredOn(MonitoredResource resource)
@@ -850,7 +848,6 @@ namespace afVmPowerMonitor
             r.CurrentlyPoweredOn = true;
             r.LastSeen = DateTime.Now;
             r.LastSeenPoweredOn = DateTime.Now;
-            r.TotalDiscoveries++;
             r.TotalPoweredOn++;
 
             if (wasPoweredOn)
@@ -876,7 +873,7 @@ namespace afVmPowerMonitor
                 _log.LogWarning($"resource powered on. executing action:\r\n{JsonConvert.SerializeObject(r, Formatting.Indented)}");
             }
 
-            AddOrUpdateResource(r);
+            AddOrUpdateResourceList(r);
             return r;
         }
     }
