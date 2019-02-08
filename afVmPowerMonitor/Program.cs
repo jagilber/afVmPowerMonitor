@@ -815,7 +815,10 @@ namespace afVmPowerMonitor
 
             foreach (MonitoredResource resource in new List<MonitoredResource>(_monitoredResources))
             {
-                if (currentResources.Any(x => x.Id == resource.Id & x.Name == resource.Name & x.Type == resource.Type && x.InstanceId == resource.InstanceId))
+                if (currentResources.Any(x => string.Compare(x.Id, resource.Id, true) == 0
+                    & string.Compare(x.Name, resource.Name, true) == 0
+                    & string.Compare(x.Type, resource.Type, true) == 0
+                    & x.InstanceId == resource.InstanceId))
                 {
                     MonitoredResource currentResource = GetMonitoredResource(resource);
                     currentResource.LastSeen = DateTime.Now;
