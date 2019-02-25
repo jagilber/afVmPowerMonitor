@@ -11,13 +11,35 @@ namespace afVmPowerMonitor
 {
     public class MonitoredResource : GenericResource, IComparable<MonitoredResource>, IEqualityComparer<MonitoredResource>
     {
-        public MonitoredResource()
-        //: this ( new GenericResource())
-        {
-        }
+        public int ConsecutivePoweredOn { get; set; }
 
-        public MonitoredResource(GenericResource resource)
-            : base(resource.Id,
+        public bool CurrentlyMonitored { get; set; }
+
+        public bool CurrentlyPoweredOn { get; set; }
+
+        public bool ExecuteAction { get; internal set; }
+
+        public DateTime FirstDiscovered { get; set; }
+
+        public int InstanceId { get; set; }
+
+        public DateTime LastActionExecuted { get; set; }
+
+        public DateTime LastEmailSent { get; set; }
+
+        public DateTime LastSeen { get; set; }
+
+        public DateTime LastSeenPoweredOn { get; set; }
+
+        public int ResourceHash { get; private set; }
+
+        public bool SendEmail { get; internal set; }
+
+        public int TotalDiscoveries { get; set; }
+
+        public int TotalPoweredOn { get; set; }
+
+        public MonitoredResource(GenericResource resource) : base(resource.Id,
                     resource.Name,
                     resource.Type,
                     resource.Location,
@@ -29,21 +51,8 @@ namespace afVmPowerMonitor
                     resource.Sku,
                     resource.Identity)
         {
+            ResourceHash = resource.Id.GetHashCode();
         }
-
-        public bool CurrentlyMonitored { get; set; }
-        public int ConsecutivePoweredOn { get; set; }
-        public bool CurrentlyPoweredOn { get; set; }
-        public bool ExecuteAction { get; internal set; }
-        public DateTime FirstDiscovered { get; set; }
-        public int InstanceId { get; set; }
-        public DateTime LastActionExecuted { get; set; }
-        public DateTime LastEmailSent { get; set; }
-        public DateTime LastSeen { get; set; }
-        public DateTime LastSeenPoweredOn { get; set; }
-        public bool SendEmail { get; internal set; }
-        public int TotalDiscoveries { get; set; }
-        public int TotalPoweredOn { get; set; }
 
         public int CompareTo(MonitoredResource other)
         {
