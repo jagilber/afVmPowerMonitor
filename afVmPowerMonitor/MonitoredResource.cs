@@ -39,6 +39,11 @@ namespace afVmPowerMonitor
 
         public int TotalPoweredOn { get; set; }
 
+        public MonitoredResource()
+        //: this ( new GenericResource())
+        {
+        }
+
         public MonitoredResource(GenericResource resource) : base(resource.Id,
                     resource.Name,
                     resource.Type,
