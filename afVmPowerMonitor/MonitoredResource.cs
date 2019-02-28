@@ -31,7 +31,7 @@ namespace afVmPowerMonitor
 
         public DateTime LastSeenPoweredOn { get; set; }
 
-        public int ResourceHash { get; private set; }
+        public int ResourceHash { get => Id.GetHashCode(); }
 
         public bool SendEmail { get; internal set; }
 
@@ -56,7 +56,6 @@ namespace afVmPowerMonitor
                     resource.Sku,
                     resource.Identity)
         {
-            ResourceHash = resource.Id.GetHashCode();
         }
 
         public int CompareTo(MonitoredResource other)
