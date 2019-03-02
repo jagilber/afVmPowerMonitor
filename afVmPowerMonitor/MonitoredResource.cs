@@ -6,11 +6,15 @@
 using Microsoft.Azure.Management.ResourceManager.Models;
 using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace afVmPowerMonitor
 {
     public class MonitoredResource : GenericResource, IComparable<MonitoredResource>, IEqualityComparer<MonitoredResource>
     {
+        private string _resourceHash = string.Empty;
+
         public int ConsecutivePoweredOn { get; set; }
 
         public bool CurrentlyMonitored { get; set; }
@@ -31,7 +35,36 @@ namespace afVmPowerMonitor
 
         public DateTime LastSeenPoweredOn { get; set; }
 
-        public int ResourceHash { get => Id.GetHashCode(); }
+        public string ResourceHash
+        {
+            get
+            {
+                if (string.IsNullOrEmpty(_resourceHash))
+                {
+                    using (MD5 md5 = MD5.Create())
+                    {
+                        byte[] data = md5.ComputeHash(Encoding.UTF8.GetBytes(Id + InstanceId.ToString()));
+                        StringBuilder sBuilder = new StringBuilder();
+
+                        for (int i = 0; i < data.Length; i++)
+                        {
+                            sBuilder.Append(data[i].ToString("x2"));
+                        }
+
+                        _resourceHash = sBuilder.ToString();
+                    }
+                }
+
+                return _resourceHash;
+            }
+            set
+            {
+                if (_resourceHash != value)
+                {
+                    _resourceHash = value;
+                }
+            }
+        }
 
         public bool SendEmail { get; internal set; }
 
