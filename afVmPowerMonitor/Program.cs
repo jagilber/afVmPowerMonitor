@@ -230,19 +230,19 @@ namespace afVmPowerMonitor
 
                 if (!result.properties.state.Contains("Stopped"))
                 {
-                    MonitoredResource r = UpdateResourcePoweredOn(mresource);
+                    MonitoredResource monitoredResource = UpdateResourcePoweredOn(mresource);
 
-                    if (IncludeResource(r, _kustoIncludeFilter, _kustoExcludeFilter))
+                    if (IncludeResource(monitoredResource, _kustoIncludeFilter, _kustoExcludeFilter))
                     {
-                        if (r.SendEmail)
+                        if (monitoredResource.SendEmail)
                         {
-                            kustoRunningResults.Add(r);
+                            kustoRunningResults.Add(monitoredResource);
                         }
 
-                        if (r.ExecuteAction)
+                        if (monitoredResource.ExecuteAction)
                         {
                             // send post to turn off cluster
-                            string aresult = POST($"{_baseUri}{r.Id}/stop", null, _kustoApiVersion);
+                            string aresult = POST($"{_baseUri}{monitoredResource.Id}/stop", null, _kustoApiVersion);
                         }
                     }
 
@@ -315,16 +315,16 @@ namespace afVmPowerMonitor
 
                 if (instance.statuses.Count(x => x.code.Contains("running")) > 0)
                 {
-                    MonitoredResource r = UpdateResourcePoweredOn(mresource);
+                    MonitoredResource monitoredResource = UpdateResourcePoweredOn(mresource);
 
-                    if (IncludeResource(r, _vmIncludeFilter, _vmExcludeFilter))
+                    if (IncludeResource(monitoredResource, _vmIncludeFilter, _vmExcludeFilter))
                     {
-                        if (r.SendEmail)
+                        if (monitoredResource.SendEmail)
                         {
-                            vmRunningResults.Add(r);
+                            vmRunningResults.Add(monitoredResource);
                         }
 
-                        if (r.ExecuteAction)
+                        if (monitoredResource.ExecuteAction)
                         {
                             // send post to turn off vm
                             string aresult = POST($"{_baseUri}{result.id}/deallocate", null, _virtualMachineApiVersion);
@@ -381,16 +381,16 @@ namespace afVmPowerMonitor
 
                 if (vmInstance.statuses.Count(x => x.code.Contains("running")) > 0)
                 {
-                    MonitoredResource r = UpdateResourcePoweredOn(mresource);
+                    MonitoredResource monitoredResource = UpdateResourcePoweredOn(mresource);
 
-                    if (IncludeResource(r, _vmssIncludeFilter, _vmssExcludeFilter))
+                    if (IncludeResource(monitoredResource, _vmssIncludeFilter, _vmssExcludeFilter))
                     {
-                        if (r.SendEmail)
+                        if (monitoredResource.SendEmail)
                         {
-                            vmssRunningResults.Add(r);
+                            vmssRunningResults.Add(monitoredResource);
                         }
 
-                        if (r.ExecuteAction)
+                        if (monitoredResource.ExecuteAction)
                         {
                             // send post to turn off vm
                             // POST https://management.azure.com/subscriptions/{subscriptionId}/resourceGroups/{resourceGroupName}/providers/Microsoft.Compute/virtualMachineScaleSets/{vmScaleSetName}/virtualmachines/{instanceId}/deallocate?api-version=2017-12-01
@@ -617,22 +617,22 @@ namespace afVmPowerMonitor
             return vmssVmResults;
         }
 
-        private bool IncludeResource(MonitoredResource r, string includeFilter, string excludeFilter)
+        private bool IncludeResource(MonitoredResource monitoredResource, string includeFilter, string excludeFilter)
         {
             bool include = false;
 
-            if (!string.IsNullOrEmpty(includeFilter) && Regex.IsMatch(r.Name, includeFilter, RegexOptions.IgnoreCase))
+            if (!string.IsNullOrEmpty(includeFilter) && Regex.IsMatch(monitoredResource.Id, includeFilter, RegexOptions.IgnoreCase))
             {
                 include = true;
             }
 
-            if (!string.IsNullOrEmpty(excludeFilter) && Regex.IsMatch(r.Name, excludeFilter, RegexOptions.IgnoreCase))
+            if (!string.IsNullOrEmpty(excludeFilter) && Regex.IsMatch(monitoredResource.Id, excludeFilter, RegexOptions.IgnoreCase))
             {
                 include = false;
             }
 
-            r.CurrentlyMonitored = include;
-            _log.LogInformation($"IncludeResource:{r.Name} include?:{include}");
+            monitoredResource.CurrentlyMonitored = include;
+            _log.LogInformation($"IncludeResource:{monitoredResource.Name} include?:{include}");
             return include;
         }
 
@@ -827,51 +827,51 @@ namespace afVmPowerMonitor
 
         private void UpdateResourcePoweredOff(MonitoredResource resource)
         {
-            MonitoredResource r = GetMonitoredResource(resource);
-            r.CurrentlyPoweredOn = false;
-            r.LastSeen = DateTime.Now;
-            r.ConsecutivePoweredOn = 0;
-            r.SendEmail = false;
-            r.ExecuteAction = false;
+            MonitoredResource monitoredResource = GetMonitoredResource(resource);
+            monitoredResource.CurrentlyPoweredOn = false;
+            monitoredResource.LastSeen = DateTime.Now;
+            monitoredResource.ConsecutivePoweredOn = 0;
+            monitoredResource.SendEmail = false;
+            monitoredResource.ExecuteAction = false;
 
-            AddOrUpdateResourceList(r);
+            AddOrUpdateResourceList(monitoredResource);
         }
 
         private MonitoredResource UpdateResourcePoweredOn(MonitoredResource resource)
         {
-            MonitoredResource r = GetMonitoredResource(resource);
-            _log.LogInformation($"UpdateResourcePoweredOn:{JsonConvert.SerializeObject(r, Formatting.Indented)}");
-            bool wasPoweredOn = r.CurrentlyPoweredOn;
-            r.CurrentlyPoweredOn = true;
-            r.LastSeen = DateTime.Now;
-            r.LastSeenPoweredOn = DateTime.Now;
-            r.TotalPoweredOn++;
+            MonitoredResource monitoredResource = GetMonitoredResource(resource);
+            _log.LogInformation($"UpdateResourcePoweredOn:{JsonConvert.SerializeObject(monitoredResource, Formatting.Indented)}");
+            bool wasPoweredOn = monitoredResource.CurrentlyPoweredOn;
+            monitoredResource.CurrentlyPoweredOn = true;
+            monitoredResource.LastSeen = DateTime.Now;
+            monitoredResource.LastSeenPoweredOn = DateTime.Now;
+            monitoredResource.TotalPoweredOn++;
 
             if (wasPoweredOn)
             {
-                r.ConsecutivePoweredOn++;
+                monitoredResource.ConsecutivePoweredOn++;
             }
             else
             {
-                r.ConsecutivePoweredOn = 1;
+                monitoredResource.ConsecutivePoweredOn = 1;
             }
 
-            if (r.ConsecutivePoweredOn >= _consecutivePoweredOnEmailCount)
+            if (monitoredResource.ConsecutivePoweredOn >= _consecutivePoweredOnEmailCount)
             {
-                r.LastEmailSent = DateTime.Now;
-                r.SendEmail = true;
-                _log.LogWarning($"resource powered on. sending email:\r\n{JsonConvert.SerializeObject(r, Formatting.Indented)}");
+                monitoredResource.LastEmailSent = DateTime.Now;
+                monitoredResource.SendEmail = true;
+                _log.LogWarning($"resource powered on. sending email:\r\n{JsonConvert.SerializeObject(monitoredResource, Formatting.Indented)}");
             }
 
-            if (r.ConsecutivePoweredOn >= _consecutivePoweredOnActionCount)
+            if (monitoredResource.ConsecutivePoweredOn >= _consecutivePoweredOnActionCount)
             {
-                r.LastActionExecuted = DateTime.Now;
-                r.ExecuteAction = true;
-                _log.LogWarning($"resource powered on. executing action:\r\n{JsonConvert.SerializeObject(r, Formatting.Indented)}");
+                monitoredResource.LastActionExecuted = DateTime.Now;
+                monitoredResource.ExecuteAction = true;
+                _log.LogWarning($"resource powered on. executing action:\r\n{JsonConvert.SerializeObject(monitoredResource, Formatting.Indented)}");
             }
 
-            AddOrUpdateResourceList(r);
-            return r;
+            AddOrUpdateResourceList(monitoredResource);
+            return monitoredResource;
         }
     }
 }
